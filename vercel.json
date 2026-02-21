@@ -1,6 +1,0 @@
-{
-    "buildCommand": "cd Frontend-Astro && npm run build",
-    "outputDirectory": "Frontend-Astro/dist",
-    "framework": "astro",
-    "installCommand": "cd Frontend-Astro && npm install"
-}

@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-        "build": "cd Frontend-Astro && npm install && npm run build",
+        "build": "cd Frontend-Astro && npm run build && rm -rf ../.vercel && cp -r .vercel ../",
         "install": "cd Frontend-Astro && npm install",
         "start": "cd Frontend-Astro && npm run dev"
     }
