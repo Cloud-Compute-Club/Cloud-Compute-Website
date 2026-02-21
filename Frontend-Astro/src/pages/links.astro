@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import ResourceCarousel from '../components/resources/ResourceCarousel';
-import ProviderGrid from '../components/resources/ProviderGrid';
+import ResourceCarousel from '../components/resources/ResourceCarousel.astro';
+import ProviderGrid from '../components/resources/ProviderGrid.astro';
 ---
 
 <Layout title="Cloud Resources | cloud computing club">
@@ -18,7 +18,7 @@ import ProviderGrid from '../components/resources/ProviderGrid';
 
     {/* Featured Carousel */}
     <div class="mb-20">
-      <ResourceCarousel client:visible />
+      <ResourceCarousel />
     </div>
 
     {/* Providers Section */}
@@ -31,7 +31,7 @@ import ProviderGrid from '../components/resources/ProviderGrid';
         <div class="h-px bg-white/10 flex-grow mx-8" />
       </div>
 
-      <ProviderGrid client:load />
+      <ProviderGrid />
     </section>
 
     {/* Community Section CTA */}
