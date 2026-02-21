@@ -1,0 +1,8 @@
+{
+    "name": "cloud-compute-website-root",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "start-script": "cd Frontend-Astro && npm run dev"
+    }
+}

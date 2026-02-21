@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-secondary: #262626;
+  --color-accent: #1d4ed8;
+  --color-background-dark: #0a0a0a;
+  --color-surface-dark: #1a1a1a;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a1a1aa;
+}
+
+@layer base {
+  body {
+    @apply bg-background-dark text-text-primary antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-surface-dark/40 backdrop-blur-xl border border-white/10 rounded-2xl;
+  }
+
+  .nav-link {
+    @apply text-text-secondary hover:text-primary transition-colors duration-200 text-sm font-medium;
+  }
+
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-dark text-background-dark px-6 py-2.5 rounded-full font-semibold transition-all duration-300 shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95;
+  }
+
+  .btn-outline {
+    @apply border border-white/10 hover:bg-white/5 py-2.5 px-6 rounded-full font-medium transition-all duration-300;
+  }
+}
+
+/* Custom Utilities */
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-dark;
+}
+
+.animate-glow {
+  animation: glow 4s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px -5px rgba(37, 99, 235, 0.2);
+  }
+  to {
+    box-shadow: 0 0 40px 0px rgba(37, 99, 235, 0.4);
+  }
+}

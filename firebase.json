@@ -32,5 +32,16 @@
   },
   "database": {
     "rules": "database.rules.json"
+  },
+  "hosting": {
+    "source": "Frontend-Astro",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "frameworksBackend": {
+      "region": "us-central1"
+    }
   }
 }

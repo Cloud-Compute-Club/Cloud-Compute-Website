@@ -1,0 +1,62 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Hero } from '../components/landing/Hero';
+import { HomeCTA } from '../components/landing/HomeCTA.jsx';
+---
+
+<Layout title="Cloud Compute Club | Build & Scale">
+	<main>
+		<Hero client:load />
+        
+        <section class="py-24 px-6 md:px-12 bg-background-dark/50">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
+                    <div class="max-w-2xl">
+                        <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-4">Core Pillars of <span class="text-primary">CCC</span></h2>
+                        <p class="text-text-secondary text-lg">We provide the tools and guidance needed to excel in the modern cloud landscape.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {/* Feature 1 */}
+                    <div class="glass-card p-8 hover:bg-surface-dark transition-all duration-300 group">
+                        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Cloud Architecture</h3>
+                        <p class="text-text-secondary line-height-relaxed">Master AWS, GCP, and Azure through hands-on tutorials and community-vetted blueprints.</p>
+                    </div>
+
+                    {/* Feature 2 */}
+                    <div class="glass-card p-8 hover:bg-surface-dark transition-all duration-300 group border-primary/20">
+                        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Developer Community</h3>
+                        <p class="text-text-secondary line-height-relaxed">Join a thriving network of enthusiasts sharing insights, debugging together, and networking.</p>
+                    </div>
+
+                    {/* Feature 3 */}
+                    <div class="glass-card p-8 hover:bg-surface-dark transition-all duration-300 group">
+                        <div class="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Performance Ops</h3>
+                        <p class="text-text-secondary line-height-relaxed">Learn how to optimize your builds, reduce latency, and manage cost-effective cloud operations.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {/* CTA Section */}
+        <section class="py-24 px-6 md:px-12 min-h-[400px]">
+            <HomeCTA client:only="react" />
+        </section>
+	</main>
+</Layout>

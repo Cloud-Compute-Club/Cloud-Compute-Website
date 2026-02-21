@@ -1,0 +1,111 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { providers } from '../../data/resources';
+import PricingCalculatorWidget from '../../components/resources/PricingCalculatorWidget.jsx';
+import ServiceHealthWidget from '../../components/resources/ServiceHealthWidget.jsx';
+import CliDownloadWidget from '../../components/resources/CliDownloadWidget.jsx';
+import InteractiveToolsTabs from '../../components/resources/InteractiveToolsTabs.jsx';
+
+export const prerender = true;
+export function getStaticPaths() {
+  return providers.map((provider) => ({
+    params: { slug: provider.slug },
+    props: { provider },
+  }));
+}
+
+const { provider } = Astro.props;
+---
+
+<Layout title={`${provider.name} Resources | Cloud Compute Club`}>
+  <main class="pt-24 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-2 text-sm text-text-secondary mb-8">
+      <a href="/links" class="hover:text-primary transition-colors">Resources</a>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+      <span class="text-white font-medium">{provider.name}</span>
+    </nav>
+
+    <!-- Provider Header -->
+    <header class="mb-16">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <div class="flex-1">
+          <div class="flex items-center gap-4 mb-6">
+            <div 
+              class="w-16 h-16 rounded-2xl flex items-center justify-center p-3 shadow-xl animate-glow"
+              style={{ backgroundColor: provider.color }}
+            >
+              <img src={provider.icon} alt={`${provider.name} logo`} class="w-10 h-10 object-contain" />
+            </div>
+            <h1 class="text-4xl md:text-6xl font-black text-white">
+              {provider.name}
+            </h1>
+          </div>
+          <p class="text-xl text-text-secondary max-w-3xl leading-relaxed">
+            {provider.description} Exploring {provider.name}'s vast ecosystem - from serverless with Lambda or Functions to large scale enterprise infrastructure.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Content Sections -->
+    <div class="w-full">
+      <div class="space-y-12">
+        <!-- Documentation section -->
+          <section>
+            <h2 class="text-2xl font-bold text-white mb-8 border-l-4 border-primary pl-4">Core Documentation & Guides</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {provider.resources.map((resource) => (
+                <a 
+                  href={resource.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="glass-card p-6 group hover:bg-white/5 transition-all flex flex-col justify-between"
+                >
+                  <div>
+                    <div class="flex items-center justify-between mb-4">
+                      <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-white/10 text-text-secondary group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                        {resource.type}
+                      </span>
+                      <svg class="w-4 h-4 text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </div>
+                    <h4 class="text-white font-bold group-hover:text-primary transition-colors mb-2">{resource.title}</h4>
+                    <div class="flex gap-2 flex-wrap">
+                      {resource.tags.map(tag => (
+                        <span class="text-[10px] text-text-secondary">#{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+
+          <!-- Placeholder for dynamic content -->
+          <section class="mt-16 bg-primary/5 rounded-3xl p-12 text-center border border-primary/10">
+            <h3 class="text-2xl font-bold text-white mb-4">Live Project Content</h3>
+            <p class="text-text-secondary mb-6 mx-auto max-w-md">
+              We're currently gathering more specific blog posts, projects, and lab materials for {provider.name}. Check back soon!
+            </p>
+            <div class="flex gap-4 justify-center">
+              <span class="w-3 h-3 rounded-full bg-primary/40 animate-pulse"></span>
+              <span class="w-3 h-3 rounded-full bg-primary/40 animate-pulse" style={{ animationDelay: '0.2s' }}></span>
+              <span class="w-3 h-3 rounded-full bg-primary/40 animate-pulse" style={{ animationDelay: '0.4s' }}></span>
+            </div>
+          </section>
+
+          <!-- Interactive Tools Section -->
+          <section class="mt-16 space-y-8">
+            <h2 class="text-2xl font-bold text-white mb-8 border-l-4 border-primary pl-4">Interactive Tools</h2>
+            
+            <InteractiveToolsTabs client:load providerName={provider.name} providerColor={provider.color} />
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>

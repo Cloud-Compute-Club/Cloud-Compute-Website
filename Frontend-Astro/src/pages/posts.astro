@@ -1,0 +1,26 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PostsList from '../components/posts/PostsList';
+---
+
+<Layout title="Cloud Blog - Insights & Updates">
+    <main class="pt-32 pb-24 px-6 md:px-12 min-h-screen">
+        <div class="max-w-7xl mx-auto">
+            <header class="mb-16">
+                <h1 class="text-4xl md:text-6xl font-black tracking-tighter mb-4">Latest from <span class="text-gradient">the Community</span></h1>
+                <p class="text-text-secondary text-lg max-w-2xl leading-relaxed">Explore the latest cloud architectures, development tips, and community updates from our expert members.</p>
+                
+                <div class="mt-8 flex flex-wrap gap-4 items-center justify-between">
+                    <div class="flex gap-2">
+                        <span class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-primary">All Posts</span>
+                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 transition-colors cursor-pointer text-xs font-bold text-text-secondary">AWS</span>
+                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 transition-colors cursor-pointer text-xs font-bold text-text-secondary">Azure</span>
+                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 transition-colors cursor-pointer text-xs font-bold text-text-secondary">GCP</span>
+                    </div>
+                </div>
+            </header>
+
+            <PostsList client:load />
+        </div>
+    </main>
+</Layout>

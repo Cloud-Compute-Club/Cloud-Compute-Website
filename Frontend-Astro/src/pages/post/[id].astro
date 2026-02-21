@@ -1,0 +1,16 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PostDetail from '../../components/posts/PostDetail';
+
+export function getStaticPaths() {
+  return [
+    { params: { id: 'preview' } },
+  ];
+}
+
+const { id } = Astro.params;
+---
+
+<Layout title={`Architecture Insight - Cloud Compute Club`}>
+    <PostDetail client:load postId={id} />
+</Layout>
