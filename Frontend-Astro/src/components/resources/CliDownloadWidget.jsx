@@ -33,7 +33,7 @@ export default function CliDownloadWidget({ providerName, providerColor }) {
 
     return (
         <div className="glass-card p-6 md:p-8 relative overflow-hidden group flex flex-col justify-between h-full">
-            <div className="absolute -top-32 -right-32 w-64 h-64 rounded-full blur-3xl opacity-10 pointer-events-none transition-opacity group-hover:opacity-20" style={{ backgroundColor: providerColor }}></div>
+            <div className="hidden md:block absolute -top-32 -right-32 w-64 h-64 rounded-full blur-3xl opacity-10 pointer-events-none transition-opacity group-hover:opacity-20" style={{ backgroundColor: providerColor }}></div>
 
             <div className="flex flex-col md:flex-row md:items-start justify-between mb-6 gap-4 relative z-10">
                 <div className="flex items-center gap-4">

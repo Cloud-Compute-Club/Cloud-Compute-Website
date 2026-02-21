@@ -60,7 +60,7 @@ export function HomeCTA() {
     // Default Logged out CTA
     return (
         <div className="max-w-5xl mx-auto glass-card p-12 text-center border-primary/10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px]"></div>
+            <div className="hidden md:block absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px]"></div>
             <h2 className="text-4xl font-bold mb-6">Ready to scale your skills?</h2>
             <p className="text-text-secondary text-lg mb-10 max-w-xl mx-auto">Join hundreds of developers already building the next generation of cloud applications.</p>
             <a href="/signup" className="btn-primary inline-block">Create Your Account</a>

@@ -20,7 +20,7 @@
 
 @layer components {
   .glass-card {
-    @apply bg-surface-dark/40 backdrop-blur-xl border border-white/10 rounded-2xl;
+    @apply bg-surface-dark/80 md:bg-surface-dark/40 md:backdrop-blur-xl border border-white/10 rounded-2xl;
   }
 
   .nav-link {

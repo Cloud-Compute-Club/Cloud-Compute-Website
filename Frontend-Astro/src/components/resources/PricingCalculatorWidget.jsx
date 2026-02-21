@@ -24,7 +24,7 @@ export default function PricingCalculatorWidget({ providerName, providerColor })
     return (
         <div className="glass-card p-6 md:p-10 relative overflow-hidden group">
             {/* Decorative background glow using provider color */}
-            <div className="absolute -top-32 -right-32 w-64 h-64 rounded-full blur-3xl opacity-10 pointer-events-none transition-opacity group-hover:opacity-20" style={{ backgroundColor: providerColor }}></div>
+            <div className="hidden md:block absolute -top-32 -right-32 w-64 h-64 rounded-full blur-3xl opacity-10 pointer-events-none transition-opacity group-hover:opacity-20" style={{ backgroundColor: providerColor }}></div>
 
             <div className="flex items-center gap-4 mb-8">
                 <div
