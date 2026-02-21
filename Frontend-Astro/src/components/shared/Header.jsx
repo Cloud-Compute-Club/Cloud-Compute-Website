@@ -16,7 +16,7 @@ export default function Header() {
             <nav className="max-w-7xl mx-auto flex items-center justify-between glass-card px-6 py-3">
                 <a href="/" className="flex items-center gap-2">
                     <img src="/logos/CCC_Logo.jpg" alt="Logo" className="h-8 rounded-full" />
-                    <span className="text-xl font-bold text-white">Cloud Compute Club</span>
+                    <span className="text-xl font-bold text-white">cloud computing club</span>
                 </a>
 
                 <div className="hidden md:flex items-center gap-8">

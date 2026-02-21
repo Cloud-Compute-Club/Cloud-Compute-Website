@@ -21,7 +21,7 @@ export function Hero() {
                         <span className="text-gradient">Scale Beyond.</span>
                     </h1>
                     <p className="text-text-secondary text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-                        The Cloud Compute Club is a hub for student developers to master technologies, learn new skills, and build using cloud.
+                        The cloud computing club is a hub for student developers to master technologies, learn new skills, and build using cloud.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
