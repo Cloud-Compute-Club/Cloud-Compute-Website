@@ -42,8 +42,10 @@ export default function ProfilePage() {
             setProfile(data);
             setBioText(data.bio || '');
 
-            // Default to interactions for everyone, but if they are an admin, show posts
-            if (data.role === 'admin') {
+            // Default interactions for desktop. For mobile, we explicitly start on the Profile tab to save space.
+            if (window.innerWidth < 1024) {
+                setActiveTab('profile');
+            } else if (data.role === 'admin') {
                 setActiveTab('posts');
             } else {
                 setActiveTab('voted');
@@ -128,35 +130,63 @@ export default function ProfilePage() {
             >
                 {/* Banner Header */}
                 <div className="h-48 bg-gradient-to-br from-primary/30 via-background-dark/50 to-background-dark relative border-b border-white/5">
-                    <div className="absolute -bottom-16 left-10 flex items-end gap-6">
-                        <div className="w-32 h-32 rounded-3xl bg-surface-dark border-4 border-background-dark flex items-center justify-center text-4xl font-black text-primary shadow-2xl overflow-hidden glass-card">
+                    <div className="absolute -bottom-12 md:-bottom-16 left-4 md:left-10 flex items-end gap-4 md:gap-6 pr-4">
+                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-surface-dark border-4 border-background-dark flex-shrink-0 flex items-center justify-center text-3xl md:text-4xl font-black text-primary shadow-2xl overflow-hidden glass-card">
                             {profile.photoURL ? (
                                 <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
                             ) : (
                                 profile.displayName?.charAt(0) || 'U'
                             )}
                         </div>
-                        <div className="pb-4">
-                            <div className="flex items-center gap-3 mb-1">
-                                <h1 className="text-3xl font-black text-white">{profile.displayName || 'Cloud Architect'}</h1>
+                        <div className="pb-1 md:pb-4 min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
+                                <h1 className="text-xl md:text-3xl font-black text-white leading-tight break-words">{profile.displayName || 'Cloud Architect'}</h1>
                                 {profile.role === 'admin' && (
-                                    <span className="px-3 py-1 bg-primary text-background-dark rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20">
+                                    <span className="px-2 md:px-3 py-1 bg-primary text-background-dark rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 flex-shrink-0">
                                         Admin
                                     </span>
                                 )}
                             </div>
-                            <div className="flex items-center gap-4">
-                                <p className="text-text-secondary font-mono text-sm opacity-60">ID://{profile.userKey}</p>
-                                <span className="text-white/10 text-xs text-text-secondary">• Joined {new Date(profile.createdAt).toLocaleDateString()}</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-4 mt-1 md:mt-0">
+                                <p className="text-text-secondary font-mono text-[10px] md:text-sm opacity-60">ID://{profile.userKey}</p>
+                                <span className="text-white/10 text-xs text-text-secondary hidden sm:inline">•</span>
+                                <span className="text-white/10 text-[9px] md:text-xs text-text-secondary opacity-80">Joined {new Date(profile.createdAt).toLocaleDateString()}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="pt-24 pb-12 px-10">
+                {/* Mobile Navigation Tabs (Only visible on small screens) */}
+                <div className="lg:hidden flex border-b border-white/5 px-6 md:px-10 mt-20">
+                    <button
+                        onClick={() => setActiveTab('profile')}
+                        className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'profile' ? 'text-primary' : 'text-text-secondary hover:text-white'}`}
+                    >
+                        Profile
+                        {activeTab === 'profile' && <motion.div layoutId="mobileTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+                    </button>
+                    {profile.role === 'admin' && (
+                        <button
+                            onClick={() => setActiveTab('posts')}
+                            className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'posts' ? 'text-primary' : 'text-text-secondary hover:text-white'}`}
+                        >
+                            Posts
+                            {activeTab === 'posts' && <motion.div layoutId="mobileTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+                        </button>
+                    )}
+                    <button
+                        onClick={() => setActiveTab('voted')}
+                        className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'voted' ? 'text-primary' : 'text-text-secondary hover:text-white'}`}
+                    >
+                        Activity
+                        {activeTab === 'voted' && <motion.div layoutId="mobileTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+                    </button>
+                </div>
+
+                <div className="pt-8 lg:pt-24 pb-12 px-10">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                        {/* Sidebar: Bio & Info */}
-                        <div className="space-y-8">
+                        {/* Sidebar: Bio & Info (Visible on Desktop always, Visible on Mobile only if 'profile' tab is active) */}
+                        <div className={`space-y-8 ${activeTab === 'profile' ? 'block' : 'hidden lg:block'}`}>
                             {/* Expertise Tags */}
                             <div>
                                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-primary mb-4">Interests</h3>
@@ -253,16 +283,17 @@ export default function ProfilePage() {
                             </div>
                         </div>
 
-                        {/* Main Content: Activity */}
-                        <div className="lg:col-span-2 space-y-6">
-                            <div className="flex gap-8 border-b border-white/5">
+                        {/* Main Content: Activity (Visible on Desktop always, Visible on Mobile only if 'posts' or 'voted' tab is active) */}
+                        <div className={`lg:col-span-2 space-y-6 ${activeTab === 'profile' ? 'hidden lg:block' : 'block'}`}>
+                            {/* Desktop only Navigation Tabs */}
+                            <div className="hidden lg:flex gap-8 border-b border-white/5">
                                 {profile.role === 'admin' && (
                                     <button
                                         onClick={() => setActiveTab('posts')}
                                         className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'posts' ? 'text-primary' : 'text-text-secondary hover:text-white'}`}
                                     >
                                         My Posts
-                                        {activeTab === 'posts' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+                                        {activeTab === 'posts' && <motion.div layoutId="desktopTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
                                     </button>
                                 )}
                                 <button
@@ -270,13 +301,13 @@ export default function ProfilePage() {
                                     className={`pb-4 text-xs font-black uppercase tracking-widest transition-all relative ${activeTab === 'voted' ? 'text-primary' : 'text-text-secondary hover:text-white'}`}
                                 >
                                     Interactions
-                                    {activeTab === 'voted' && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+                                    {activeTab === 'voted' && <motion.div layoutId="desktopTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
                                 </button>
                             </div>
 
                             <div className="space-y-4">
                                 <AnimatePresence mode="wait">
-                                    {activeTab === 'posts' ? (
+                                    {activeTab === 'posts' && (
                                         <motion.div
                                             key="posts-list"
                                             initial={{ opacity: 0 }}
@@ -309,7 +340,9 @@ export default function ProfilePage() {
                                                 </div>
                                             )}
                                         </motion.div>
-                                    ) : (
+                                    )}
+
+                                    {activeTab === 'voted' && (
                                         <motion.div
                                             key="voted-list"
                                             initial={{ opacity: 0 }}
