@@ -3,6 +3,8 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-        "start-script": "cd Frontend-Astro && npm run dev"
+        "build": "cd Frontend-Astro && npm install && npm run build",
+        "install": "cd Frontend-Astro && npm install",
+        "start": "cd Frontend-Astro && npm run dev"
     }
 }
