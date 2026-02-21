@@ -498,9 +498,9 @@ export const getPost = async (postId) => {
  * @returns {Promise<object>} - The newly created post data.
  * @throws {ApiError} - If the post creation fails.
  */
-export const addPost = async (title, content, images = [], isPinned = false, manualRole = null) => {
+export const addPost = async (title, content, images = [], isPinned = false, manualRole = null, files = []) => {
   const postsRef = collection(db, "posts");
-  console.log('[DEBUG] addPost called with:', { title, isPinned, manualRole });
+  console.log('[DEBUG] addPost called with:', { title, isPinned, manualRole, fileCount: files.length });
   try {
     if (!auth.currentUser) {
       console.error('[DEBUG] addPost: No authenticated user!');
@@ -512,7 +512,7 @@ export const addPost = async (title, content, images = [], isPinned = false, man
       throw new ApiError('Title and content are required', 'validation/missing-fields');
     }
 
-    // Fetch latest user data from Firestore to ensure we have displayName/photoURL
+    // Fetch latest user data from Firestore
     let userData = {};
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
@@ -526,7 +526,7 @@ export const addPost = async (title, content, images = [], isPinned = false, man
     const uploadedImages = [];
     for (const img of images) {
       if (img.file) {
-        const path = `posts/${auth.currentUser.uid}/${Date.now()}-${img.file.name}`;
+        const path = `posts/${auth.currentUser.uid}/images/${Date.now()}-${img.file.name}`;
         const url = await uploadFile(img.file, path);
         uploadedImages.push({
           url,
@@ -535,38 +535,107 @@ export const addPost = async (title, content, images = [], isPinned = false, man
       }
     }
 
+    // Handle file attachments
+    const uploadedFiles = [];
+    for (const fileObj of files) {
+      if (fileObj.file) {
+        const path = `posts/${auth.currentUser.uid}/files/${Date.now()}-${fileObj.file.name}`;
+        const url = await uploadFile(fileObj.file, path);
+        uploadedFiles.push({
+          url,
+          name: fileObj.file.name,
+          size: fileObj.file.size,
+          type: fileObj.file.type,
+          uploadedAt: new Date().toISOString()
+        });
+      }
+    }
+
     const postData = {
       title: title.trim(),
-      content: content, // Keep HTML as is
+      content: content,
       images: uploadedImages,
+      files: uploadedFiles,
       pinned: isPinned,
       userId: auth.currentUser.uid,
       authorId: auth.currentUser.uid,
       authorName: userData.displayName || auth.currentUser.displayName || 'Anonymous',
       authorPhotoURL: userData.photoURL || auth.currentUser.photoURL || null,
-      authorRole: manualRole || userData.role || 'Member', // Use manual override, then Firestore role, then 'Member' default
+      authorRole: manualRole || userData.role || 'Member',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       votes: 0,
       commentCount: 0
     };
 
-    console.log('[API] Preparing post data...', postData);
-
     try {
       const docRef = await addDoc(postsRef, postData);
-      console.log('[API] Post added successfully with ID:', docRef.id);
-
-      // Return the newly created post with its ID
       return {
         id: docRef.id,
         ...postData,
-        createdAt: { seconds: Math.floor(Date.now() / 1000) } // Mock for immediate UI feedback
+        createdAt: { seconds: Math.floor(Date.now() / 1000) }
       };
     } catch (writeError) {
       console.error('[API] Firestore write failed:', writeError);
       throw writeError;
     }
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw handleFirestoreError(error);
+  }
+};
+
+export const updatePost = async (postId, updates) => {
+  const postRef = doc(db, "posts", postId);
+  try {
+    if (!auth.currentUser) {
+      throw new ApiError('User not authenticated', 'auth/not-authenticated');
+    }
+
+    // Process new images if any
+    let finalImages = updates.images || [];
+    if (updates.newImages && updates.newImages.length > 0) {
+      for (const img of updates.newImages) {
+        if (img.file) {
+          const path = `posts/${auth.currentUser.uid}/images/${Date.now()}-${img.file.name}`;
+          const url = await uploadFile(img.file, path);
+          finalImages.push({
+            url,
+            caption: img.caption || ''
+          });
+        }
+      }
+    }
+
+    // Process new files if any
+    let finalFiles = updates.files || [];
+    if (updates.newFiles && updates.newFiles.length > 0) {
+      for (const fileObj of updates.newFiles) {
+        if (fileObj.file) {
+          const path = `posts/${auth.currentUser.uid}/files/${Date.now()}-${fileObj.file.name}`;
+          const url = await uploadFile(fileObj.file, path);
+          finalFiles.push({
+            url,
+            name: fileObj.file.name,
+            size: fileObj.file.size,
+            type: fileObj.file.type,
+            uploadedAt: new Date().toISOString()
+          });
+        }
+      }
+    }
+
+    const dataToUpdate = {
+      title: updates.title,
+      content: updates.content,
+      authorRole: updates.authorRole,
+      pinned: updates.pinned,
+      images: finalImages,
+      files: finalFiles,
+      updatedAt: serverTimestamp()
+    };
+
+    await updateDoc(postRef, dataToUpdate);
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw handleFirestoreError(error);
@@ -979,23 +1048,18 @@ export const voteOnComment = async (postId, commentId, direction) => {
  */
 export const uploadFile = async (file, path) => {
   try {
-    // Validate file
     if (!file) {
       throw new ApiError('No file provided', 'storage/no-file');
     }
 
-    // Check file size (e.g., 5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Increased limit for resource files (25MB)
+    const maxSize = 25 * 1024 * 1024;
     if (file.size > maxSize) {
-      throw new ApiError('File size exceeds the 5MB limit', 'storage/file-too-large');
+      throw new ApiError('File size exceeds the 25MB limit', 'storage/file-too-large');
     }
 
-    // Check file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      throw new ApiError('Invalid file type. Only images are allowed', 'storage/invalid-type');
-    }
-
+    // Allow all file types but keep a warning or specific check if needed
+    // For cloud computing platform, we need to allow zips, json, yaml, etc.
     const storageRef = ref(storage, path);
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);

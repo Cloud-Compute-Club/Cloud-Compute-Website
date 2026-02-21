@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { addPost, ERROR_TYPES } from '../../api/api';
+import { updatePost, getPost, ERROR_TYPES } from '../../api/api';
 import { useAuth } from '../../hooks/useAuth';
 import { Editor } from 'primereact/editor';
 
@@ -43,7 +43,7 @@ const renderHeader = () => {
 
 const header = renderHeader();
 
-export default function CreatePost() {
+export default function EditPost({ postId }) {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [images, setImages] = useState([]); // Array of { file, previewUrl, caption }
@@ -56,10 +56,43 @@ export default function CreatePost() {
     const { currentUser } = useAuth();
 
     useEffect(() => {
-        if (currentUser?.role) {
-            setPostRole(currentUser.role === 'admin' ? 'Cloud Architect' : 'Infrastructure Specialist');
-        }
-    }, [currentUser]);
+        if (!postId) return;
+
+        const loadPost = async () => {
+            try {
+                const data = await getPost(postId);
+                setTitle(data.title);
+                setContent(data.content || '');
+                setPostRole(data.authorRole || '');
+                setIsPinned(data.pinned || false);
+
+                // For existing images/files, we need a special way to handle them 
+                // in the state so we know they aren't new uploads.
+                // We'll map them to a format similar to what the UI expects but without a native File object.
+                if (data.images) {
+                    setImages(data.images.map(img => ({ previewUrl: img.url, caption: img.caption, existingUrl: img.url })));
+                } else {
+                    setImages([]);
+                }
+
+                if (data.files) {
+                    setFiles(data.files.map(f => ({ file: { name: f.name, size: f.size }, existingUrl: f.url })));
+                } else {
+                    setFiles([]);
+                }
+
+                // If no role set and user is admin, default to Cloud Architect
+                if (!data.authorRole && currentUser?.role) {
+                    setPostRole(currentUser.role === 'admin' ? 'Cloud Architect' : 'Infrastructure Specialist');
+                }
+            } catch (err) {
+                console.error("Error loading post:", err);
+                setError("Failed to load post data for editing.");
+            }
+        };
+
+        loadPost();
+    }, [postId, currentUser]);
 
     useEffect(() => {
         if (!currentUser && !loading) {
@@ -135,20 +168,39 @@ export default function CreatePost() {
         setError('');
 
         try {
-            await addPost(title, content, images, isPinned, postRole, files);
-            window.location.href = '/posts';
+            // separate out existing vs new media for the API
+            const newImages = images.filter(img => img.file);
+            const existingImages = images.filter(img => !img.file).map(img => ({ url: img.existingUrl, caption: img.caption }));
+
+            const newFiles = files.filter(f => f.file && !f.existingUrl);
+            const existingFiles = files.filter(f => f.existingUrl).map(f => ({ url: f.existingUrl, name: f.file.name, size: f.file.size }));
+
+            await updatePost(postId, {
+                title,
+                content,
+                authorRole: postRole,
+                pinned: isPinned,
+                newImages,
+                images: existingImages, // The API replaces the images array so we send the kept existing ones
+                newFiles,
+                files: existingFiles
+            });
+            window.location.href = `/post/${postId}`;
         } catch (err) {
-            setError(err.message || 'Failed to create post');
+            setError(err.message || 'Failed to update post');
             setLoading(false);
         }
     };
 
+    if (!currentUser) return null; // Avoid flicker
+
+    // We already know if someone is the original author OR an admin from the rule validation in the backend, but we should do a light check here
     if (currentUser?.role !== 'admin') {
         return (
             <div className="min-h-screen flex items-center justify-center pt-24">
                 <div className="glass-card p-12 text-center">
                     <h2 className="text-2xl font-bold text-red-500 mb-4">Permission Denied</h2>
-                    <p className="text-text-secondary">You must be an administrator to create new architecture Posts.</p>
+                    <p className="text-text-secondary">You must be an administrator or the author to edit this Post.</p>
                     <a href="/posts" className="btn-primary mt-8 inline-block">Back to Blog</a>
                 </div>
             </div>
@@ -163,8 +215,8 @@ export default function CreatePost() {
                 className="glass-card p-10"
             >
                 <div className="mb-10 text-center">
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Build New Architecture</h1>
-                    <p className="text-text-secondary">Share your latest project or insight with the community.</p>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2">Edit Architecture</h1>
+                    <p className="text-text-secondary">Update and modify an existing post in the community.</p>
                 </div>
 
                 {error && (
@@ -323,7 +375,7 @@ export default function CreatePost() {
                     </div>
 
                     <div className="flex items-center justify-end gap-5 border-t border-white/5 pt-10 mt-10">
-                        <a href="/posts" className="px-6 py-3 rounded-xl border border-white/10 text-white font-bold hover:bg-white/5 transition-all">Cancel</a>
+                        <a href={`/post/${postId}`} className="px-6 py-3 rounded-xl border border-white/10 text-white font-bold hover:bg-white/5 transition-all">Cancel</a>
                         <button
                             type="submit"
                             disabled={loading}
@@ -339,7 +391,7 @@ export default function CreatePost() {
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
                                     </svg>
-                                    Publish Post
+                                    Save Changes
                                 </>
                             )}
                         </button>

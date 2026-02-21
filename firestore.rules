@@ -1,20 +1,27 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     // Allow read access to all users, but only allow writes if authenticated
     match /posts/{postId} {
       allow read: if true;
       allow create: if request.auth != null;
       allow update: if request.auth != null && 
         (request.auth.uid == resource.data.authorId || 
+         isAdmin() ||
          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'updatedAt', 'votes'])));
-      allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.authorId || isAdmin());
     }
     
     // User profiles are readable by anyone but only writable by the user themselves
     match /users/{userId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
     
     // Comments are stored as a subcollection of posts
@@ -23,8 +30,9 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow update: if request.auth != null && 
         (request.auth.uid == resource.data.authorId || 
+         isAdmin() ||
          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes'])));
-      allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.authorId || isAdmin());
     }
 
     // New: Allow users to track their votes

@@ -3,16 +3,19 @@ import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
-import { getPost, voteOnPost, addComment, getComments, auth, voteOnComment, getPostsByUser, deleteComment, updateComment, getUserVote } from '../../api/api';
+import { getPost, voteOnPost, addComment, getComments, auth, voteOnComment, getPostsByUser, deleteComment, updateComment, getUserVote, deletePost } from '../../api/api';
 import { useAuth } from '../../hooks/useAuth';
 
 function Comment({ comment, onReply, postId, depth = 0 }) {
+    const { currentUser } = useAuth();
     const [isReplying, setIsReplying] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [votes, setVotes] = useState(comment.votes || 0);
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(comment.content);
-    const isAuthor = auth.currentUser?.uid === comment.authorId;
+
+    // An admin OR the original author can edit/delete
+    const isAuthorOrAdmin = currentUser && (currentUser.uid === comment.authorId || currentUser.role === 'admin');
 
     const handleCommentVote = async (direction) => {
         try {
@@ -98,7 +101,7 @@ function Comment({ comment, onReply, postId, depth = 0 }) {
                             Reply
                         </button>
 
-                        {isAuthor && (
+                        {isAuthorOrAdmin && (
                             <>
                                 <button
                                     onClick={() => setIsEditing(true)}
@@ -173,6 +176,8 @@ export default function PostDetail({ postId }) {
     const [isVoting, setIsVoting] = useState(false);
     const [userVote, setUserVote] = useState(null);
     const [authorPosts, setAuthorPosts] = useState([]);
+
+    const isPostAuthorOrAdmin = currentUser && post && (currentUser.uid === post.authorId || currentUser.role === 'admin');
 
     async function fetchAuthorPosts(authorId) {
         try {
@@ -386,6 +391,57 @@ export default function PostDetail({ postId }) {
                                 )}
                             </div>
 
+                            {/* Resource Downloads Section */}
+                            {post.files && post.files.length > 0 && (
+                                <div className="mb-12 space-y-4 px-1">
+                                    <div className="flex items-center gap-2 mb-6">
+                                        <div className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)]"></div>
+                                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Resource Infrastructure</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {post.files.map((file, idx) => (
+                                            <a
+                                                key={idx}
+                                                href={file.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                download={file.name}
+                                                className="flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/30 hover:bg-white/10 transition-all group relative overflow-hidden"
+                                            >
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors"></div>
+
+                                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform relative z-10 shadow-lg">
+                                                    {file.name.endsWith('.zip') ? (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0 relative z-10">
+                                                    <p className="text-sm font-bold text-white truncate group-hover:text-primary transition-colors">{file.name}</p>
+                                                    <div className="flex items-center gap-2 mt-1.5">
+                                                        <span className="text-[10px] text-text-secondary uppercase tracking-widest font-black opacity-60">
+                                                            {file.size ? (file.size / 1024 < 1024 ? `${(file.size / 1024).toFixed(1)} KB` : `${(file.size / (1024 * 1024)).toFixed(1)} MB`) : 'Resource'}
+                                                        </span>
+                                                        <span className="text-[10px] text-white/10">•</span>
+                                                        <span className="text-[10px] text-primary font-black uppercase tracking-widest">Deploy Link</span>
+                                                    </div>
+                                                </div>
+                                                <div className="p-2 text-white/20 group-hover:text-primary transition-all relative z-10 transform group-hover:translate-y-0.5">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                    </svg>
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Action Bar */}
                             <div className="flex flex-wrap items-center gap-6 pt-6 border-t border-white/5 border-dashed">
                                 {/* Mobile Voting (Hidden on Desktop) */}
@@ -432,6 +488,30 @@ export default function PostDetail({ postId }) {
                                     </svg>
                                     Share
                                 </div>
+
+                                {isPostAuthorOrAdmin && (
+                                    <>
+                                        <div className="w-px h-4 bg-white/10 hidden md:block"></div>
+                                        <a href={`/post/edit/${postId}`} className="flex items-center gap-1.5 text-text-secondary hover:text-white cursor-pointer transition-colors text-sm font-bold">
+                                            Edit
+                                        </a>
+                                        <button
+                                            onClick={async () => {
+                                                if (window.confirm('Are you sure you want to delete this Post?')) {
+                                                    try {
+                                                        await deletePost(postId);
+                                                        window.location.href = '/posts';
+                                                    } catch (err) {
+                                                        alert(err.message);
+                                                    }
+                                                }
+                                            }}
+                                            className="flex items-center gap-1.5 text-text-secondary hover:text-red-500 cursor-pointer transition-colors text-sm font-bold"
+                                        >
+                                            Delete
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </motion.div>
