@@ -451,7 +451,7 @@ export default function AdminDashboard() {
                                     {item.image && (
                                         <div className="h-32 rounded-lg overflow-hidden bg-background-dark relative">
                                             <img src={item.image} alt="preview" className="w-full h-full object-cover opacity-80" />
-                                            <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur rounded text-[10px] font-bold text-white uppercase tracking-wider border border-white/10">Preview</div>
+                                            <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 rounded text-[10px] font-bold text-white uppercase tracking-wider border border-white/10">Preview</div>
                                         </div>
                                     )}
                                     <div>
