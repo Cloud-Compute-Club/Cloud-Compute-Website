@@ -49,7 +49,50 @@
   from {
     box-shadow: 0 0 20px -5px rgba(37, 99, 235, 0.2);
   }
+
   to {
     box-shadow: 0 0 40px 0px rgba(37, 99, 235, 0.4);
   }
+}
+
+/* PrimeReact Editor (Quill) Dark Mode Overrides */
+.p-editor-container {
+  @apply !border-white/10;
+}
+
+.p-editor-toolbar {
+  @apply !bg-white/5 !border-white/10;
+}
+
+.p-editor-content {
+  @apply !bg-transparent !border-white/10 !text-white;
+}
+
+.ql-snow .ql-stroke {
+  stroke: #a1a1aa !important;
+}
+
+.ql-snow .ql-fill {
+  fill: #a1a1aa !important;
+}
+
+.ql-snow .ql-picker {
+  color: #a1a1aa !important;
+}
+
+.ql-snow.ql-toolbar button:hover .ql-stroke,
+.ql-snow.ql-toolbar button:hover .ql-fill,
+.ql-snow.ql-toolbar button.ql-active .ql-stroke,
+.ql-snow.ql-toolbar button.ql-active .ql-fill {
+  stroke: #2563eb !important;
+}
+
+.ql-editor.ql-blank::before {
+  color: rgba(255, 255, 255, 0.2) !important;
+  font-style: normal !important;
+}
+
+.ql-editor {
+  min-height: 200px;
+  font-family: inherit !important;
 }

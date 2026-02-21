@@ -115,10 +115,10 @@ export default function PricingCalculatorWidget({ providerName, providerColor })
                     </div>
 
                     <div className="pt-6 mt-6 border-t border-white/10">
-                        <p className="text-xs text-text-secondary uppercase font-bold tracking-widest mb-1">Estimated Monthly Run Rate</p>
+                        <p className="text-xs text-text-secondary uppercase font-bold tracking-widest mb-1">Estimated Cost</p>
                         <p className="text-5xl font-black text-white flex items-start gap-1">
                             <span className="text-2xl mt-1.5" style={{ color: providerColor }}>$</span>
-                            {totalCost.toFixed(2)}
+                            {totalCost.toFixed(2)} /mo
                         </p>
                         <p className="text-xs text-text-secondary mt-3">
                             * Pricing is an approximation based on generic {providerName} rates.

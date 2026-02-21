@@ -78,9 +78,9 @@ export const providers = [
                 ]
             },
             {
-                "title": "Azure Friday",
-                "url": "https://azure.microsoft.com/en-us/resources/videos/azure-friday/",
-                "type": "resource",
+                "title": "Why Azure?",
+                "url": "https://azure.microsoft.com/en-us/explore/developer-resources",
+                "type": "link",
                 "tags": [
                     "Video",
                     "Updates"

@@ -10,12 +10,22 @@ import PostsList from '../components/posts/PostsList';
                 <h1 class="text-4xl md:text-6xl font-black tracking-tighter mb-4">Latest from <span class="text-gradient">the Community</span></h1>
                 <p class="text-text-secondary text-lg max-w-2xl leading-relaxed">Explore the latest cloud architectures, development tips, and community updates from our expert members.</p>
                 
-                <div class="mt-8 flex flex-wrap gap-4 items-center justify-between">
-                    <div class="flex gap-2">
-                        <span class="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-primary">All Posts</span>
-                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 transition-colors cursor-pointer text-xs font-bold text-text-secondary">AWS</span>
-                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 transition-colors cursor-pointer text-xs font-bold text-text-secondary">Azure</span>
-                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 transition-colors cursor-pointer text-xs font-bold text-text-secondary">GCP</span>
+                <div class="mt-8 flex flex-wrap gap-8 items-center justify-between border-t border-white/5 pt-8">
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-4 py-1.5 rounded-full bg-primary/20 border border-primary/30 text-[10px] font-black uppercase tracking-widest text-primary">Live Feed</span>
+                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 border border-white/10 transition-colors cursor-pointer text-[10px] font-black uppercase tracking-widest text-text-secondary">AWS Architect</span>
+                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 border border-white/10 transition-colors cursor-pointer text-[10px] font-black uppercase tracking-widest text-text-secondary">System Admin</span>
+                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 border border-white/10 transition-colors cursor-pointer text-[10px] font-black uppercase tracking-widest text-text-secondary">DevOps Engineer</span>
+                        <span class="px-4 py-1.5 rounded-full hover:bg-white/5 border border-white/10 transition-colors cursor-pointer text-[10px] font-black uppercase tracking-widest text-text-secondary">Security Ops</span>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <span class="text-[10px] font-black text-white/40 uppercase tracking-widest">Sort By:</span>
+                        <select class="bg-white/5 border border-white/10 rounded-lg px-4 py-1.5 text-[10px] font-black text-white outline-none uppercase tracking-widest cursor-pointer">
+                            <option>Hot</option>
+                            <option>New</option>
+                            <option>Top</option>
+                        </select>
                     </div>
                 </div>
             </header>

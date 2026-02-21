@@ -24,7 +24,10 @@ import {
   runTransaction,
   setDoc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  where,
+  limit,
+  getDocs
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -148,6 +151,15 @@ const handleStorageError = (error) => {
   );
 };
 
+const generateUserKey = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 export const login = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -191,6 +203,9 @@ export const signInWithGoogle = async () => {
           photoURL: result.user.photoURL,
           provider: 'google.com',
           role: 'user',
+          userKey: generateUserKey(),
+          bio: '',
+          tags: [],
           createdAt: new Date().toISOString(),
         });
         console.log('[Auth] New user document created.');
@@ -223,6 +238,9 @@ export const signup = async (email, password, username) => {
         email: user.email,
         displayName: username,
         role: 'user', // Default role
+        userKey: generateUserKey(),
+        bio: '',
+        tags: [],
         createdAt: new Date().toISOString(),
       });
     } catch (firestoreError) {
@@ -252,6 +270,127 @@ export const logout = async () => {
 };
 
 /**
+ * Fetch a full user profile from Firestore.
+ */
+export const getUserProfile = async (uid) => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) {
+      throw new ApiError('User profile not found', 'firestore/not-found');
+    }
+    const data = userDoc.data();
+    // Ensure userKey exists for older accounts
+    if (!data.userKey) {
+      const userKey = generateUserKey();
+      await updateDoc(userRef, { userKey });
+      data.userKey = userKey;
+    }
+    return { uid, ...data };
+  } catch (error) {
+    throw handleFirestoreError(error);
+  }
+};
+
+/**
+ * Update user profile information.
+ */
+export const updateUserProfile = async (uid, data) => {
+  try {
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+    return { success: true };
+  } catch (error) {
+    throw handleFirestoreError(error);
+  }
+};
+
+/**
+ * Fetch activity history for a specific user.
+ */
+export const getUserActivity = async (uid) => {
+  const cleanUid = String(uid || '').trim();
+  console.log('[DEBUG] getUserActivity called with clean UID:', cleanUid);
+
+  if (!cleanUid) {
+    console.warn('[DEBUG] No UID provided to getUserActivity');
+    return { posts: [], voted: [] };
+  }
+
+  try {
+    const postsRef = collection(db, 'posts');
+
+    // Fetch posts where user is author OR user identifier (resilience)
+    const [authorSnap, userSnap] = await Promise.all([
+      getDocs(query(postsRef, where('authorId', '==', cleanUid), limit(30))),
+      getDocs(query(postsRef, where('userId', '==', cleanUid), limit(30)))
+    ]);
+
+    // Use a Map to deduplicate by ID
+    const postsMap = new Map();
+
+    authorSnap.docs.forEach(doc => postsMap.set(doc.id, { id: doc.id, ...doc.data(), type: 'post' }));
+    userSnap.docs.forEach(doc => postsMap.set(doc.id, { id: doc.id, ...doc.data(), type: 'post' }));
+
+    const createdPosts = Array.from(postsMap.values());
+    console.log(`[DEBUG] Found ${createdPosts.length} unique posts for UID: ${cleanUid}`);
+
+    // Sort in memory to avoid needing composite indices
+    createdPosts.sort((a, b) => {
+      const timeA = a.createdAt?.seconds || 0;
+      const timeB = b.createdAt?.seconds || 0;
+      return timeB - timeA;
+    });
+
+    console.log(`[DEBUG] api.js: Found ${createdPosts.length} posts for UID: ${uid}`);
+    if (createdPosts.length > 0) {
+      console.log('[DEBUG] api.js: First post authorId:', createdPosts[0].authorId, 'userId:', createdPosts[0].userId);
+    }
+
+    // 2. Get posts voted on by user
+    const votesRef = collection(db, 'userVotes');
+    const votesQuery = query(votesRef, where('userId', '==', uid), limit(20));
+    const votesSnap = await getDocs(votesQuery);
+
+    // Fetch post details for those votes
+    const votedPosts = await Promise.all(votesSnap.docs.map(async (vDoc) => {
+      const pDoc = await getDoc(doc(db, 'posts', vDoc.data().postId));
+      if (pDoc.exists()) {
+        const vData = vDoc.data();
+        return {
+          id: pDoc.id,
+          ...pDoc.data(),
+          type: 'voted',
+          voteDirection: vData.direction,
+          votedAt: vData.createdAt
+        };
+      }
+      return null;
+    }));
+
+    const finalVoted = votedPosts.filter(p => p !== null);
+
+    // Sort interactions in memory
+    finalVoted.sort((a, b) => {
+      const timeA = a.votedAt?.seconds || 0;
+      const timeB = b.votedAt?.seconds || 0;
+      return timeB - timeA;
+    });
+
+    return {
+      posts: createdPosts,
+      voted: finalVoted
+    };
+  } catch (error) {
+    console.error('Error fetching user activity:', error);
+    return { posts: [], voted: [] };
+  }
+};
+
+/**
  * Fetch posts in real time.
  * @param {function} callback - Called with array of posts whenever updated
  * @returns {function} - Unsubscribe function
@@ -259,7 +398,11 @@ export const logout = async () => {
 export const getPosts = (callback, onError) => {
   try {
     const postsRef = collection(db, "posts");
-    const q = query(postsRef, orderBy("createdAt", "desc"));
+    // Simplified query to avoid index requirement for now
+    const q = query(
+      postsRef,
+      orderBy("createdAt", "desc")
+    );
 
     const unsubscribe = onSnapshot(q,
       (snapshot) => {
@@ -282,6 +425,34 @@ export const getPosts = (callback, onError) => {
     return unsubscribe;
   } catch (error) {
     console.error("Error setting up posts listener:", error);
+    throw handleFirestoreError(error);
+  }
+};
+
+/**
+ * Fetch posts by a specific user.
+ * @param {string} userId - The ID of the user whose posts to fetch.
+ * @param {number} limitCount - Maximum number of posts to fetch (default: 5).
+ * @returns {Promise<Array>} - Array of posts.
+ */
+export const getPostsByUser = async (userId, limitCount = 5) => {
+  try {
+    const postsRef = collection(db, "posts");
+    const q = query(
+      postsRef,
+      where("authorId", "==", userId),
+      orderBy("createdAt", "desc"),
+      limit(limitCount)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const posts = [];
+    querySnapshot.forEach((doc) => {
+      posts.push({ id: doc.id, ...doc.data() });
+    });
+    return posts;
+  } catch (error) {
+    console.error("Error fetching user posts:", error);
     throw handleFirestoreError(error);
   }
 };
@@ -327,43 +498,107 @@ export const getPost = async (postId) => {
  * @returns {Promise<object>} - The newly created post data.
  * @throws {ApiError} - If the post creation fails.
  */
-export const addPost = async (title, content) => {
+export const addPost = async (title, content, images = [], isPinned = false, manualRole = null) => {
+  const postsRef = collection(db, "posts");
+  console.log('[DEBUG] addPost called with:', { title, isPinned, manualRole });
   try {
     if (!auth.currentUser) {
+      console.error('[DEBUG] addPost: No authenticated user!');
       throw new ApiError('User not authenticated', 'auth/not-authenticated');
     }
+    console.log('[DEBUG] addPost: Current User UID:', auth.currentUser.uid);
 
     if (!title || !content) {
       throw new ApiError('Title and content are required', 'validation/missing-fields');
     }
 
-    const postsRef = collection(db, "posts");
-    const docRef = await addDoc(postsRef, {
+    // Fetch latest user data from Firestore to ensure we have displayName/photoURL
+    let userData = {};
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) userData = userSnap.data();
+    } catch (e) {
+      console.warn('[API] Could not fetch user data for post, using auth defaults:', e);
+    }
+
+    // Handle image uploads
+    const uploadedImages = [];
+    for (const img of images) {
+      if (img.file) {
+        const path = `posts/${auth.currentUser.uid}/${Date.now()}-${img.file.name}`;
+        const url = await uploadFile(img.file, path);
+        uploadedImages.push({
+          url,
+          caption: img.caption || ''
+        });
+      }
+    }
+
+    const postData = {
       title: title.trim(),
-      content: content.trim(),
+      content: content, // Keep HTML as is
+      images: uploadedImages,
+      pinned: isPinned,
       userId: auth.currentUser.uid,
       authorId: auth.currentUser.uid,
-      authorName: auth.currentUser.displayName || 'Anonymous',
-      authorPhotoURL: auth.currentUser.photoURL || null,
+      authorName: userData.displayName || auth.currentUser.displayName || 'Anonymous',
+      authorPhotoURL: userData.photoURL || auth.currentUser.photoURL || null,
+      authorRole: manualRole || userData.role || 'Member', // Use manual override, then Firestore role, then 'Member' default
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       votes: 0,
       commentCount: 0
-    });
-
-    // Return the newly created post with its ID
-    return {
-      id: docRef.id,
-      title,
-      content,
-      userId: auth.currentUser.uid,
-      authorId: auth.currentUser.uid,
-      authorName: auth.currentUser.displayName || 'Anonymous',
-      authorPhotoURL: auth.currentUser.photoURL || null,
-      votes: 0,
-      commentCount: 0
     };
+
+    console.log('[API] Preparing post data...', postData);
+
+    try {
+      const docRef = await addDoc(postsRef, postData);
+      console.log('[API] Post added successfully with ID:', docRef.id);
+
+      // Return the newly created post with its ID
+      return {
+        id: docRef.id,
+        ...postData,
+        createdAt: { seconds: Math.floor(Date.now() / 1000) } // Mock for immediate UI feedback
+      };
+    } catch (writeError) {
+      console.error('[API] Firestore write failed:', writeError);
+      throw writeError;
+    }
   } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw handleFirestoreError(error);
+  }
+};
+
+/**
+ * Toggle the pinned status of a post.
+ * @param {string} postId - The ID of the post.
+ * @param {boolean} currentPinnedStatus - The current pinned status.
+ * @returns {Promise<void>}
+ */
+export const togglePinPost = async (postId, currentPinnedStatus) => {
+  try {
+    if (!auth.currentUser) {
+      throw new ApiError('User not authenticated', 'auth/not-authenticated');
+    }
+
+    // Check if user is admin (this would normally be enforced by security rules, 
+    // but we can check here for better UI experience)
+    const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+    if (userDoc.data()?.role !== 'admin') {
+      throw new ApiError('Only admins can pin posts', 'permission-denied');
+    }
+
+    const postRef = doc(db, "posts", postId);
+    await updateDoc(postRef, {
+      pinned: !currentPinnedStatus,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error toggling pin status:", error);
     if (error instanceof ApiError) throw error;
     throw handleFirestoreError(error);
   }
@@ -450,9 +685,21 @@ export const updateComment = async (postId, commentId, newContent) => {
 
     const commentRef = doc(db, "posts", postId, "comments", commentId);
 
-    await updateDoc(commentRef, {
-      content: newContent.trim(),
-      updatedAt: serverTimestamp(),
+    await runTransaction(db, async (transaction) => {
+      const commentDoc = await transaction.get(commentRef);
+      if (!commentDoc.exists()) {
+        throw new ApiError('Comment not found', 'firestore/not-found');
+      }
+
+      // Ensure the user is the author before updating
+      if (commentDoc.data().authorId !== auth.currentUser.uid) {
+        throw new ApiError('You do not have permission to edit this comment', 'permission-denied');
+      }
+
+      transaction.update(commentRef, {
+        content: newContent.trim(),
+        updatedAt: serverTimestamp(),
+      });
     });
 
   } catch (error) {
@@ -516,13 +763,24 @@ export const addComment = async (postId, content, parentId = null) => {
       throw new ApiError('Post ID and content are required', 'validation/missing-fields');
     }
 
+    // Fetch latest user data from Firestore to ensure we have displayName/photoURL
+    let userData = {};
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) userData = userSnap.data();
+    } catch (e) {
+      console.warn('[API] Could not fetch user data for comment:', e);
+    }
+
     const commentsRef = collection(db, "posts", postId, "comments");
     const commentData = {
       content: content.trim(),
       userId: auth.currentUser.uid,
       authorId: auth.currentUser.uid,
-      authorName: auth.currentUser.displayName || 'Anonymous',
-      authorPhotoURL: auth.currentUser.photoURL || null,
+      authorName: userData.displayName || auth.currentUser.displayName || 'Anonymous',
+      authorPhotoURL: userData.photoURL || auth.currentUser.photoURL || null,
+      authorRole: userData.role || 'Member',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       votes: 0,
@@ -620,6 +878,23 @@ export const voteOnPost = async (postId, direction) => {
     console.error("Error voting on post:", error);
     if (error instanceof ApiError) throw error;
     throw handleFirestoreError(error);
+  }
+};
+
+/**
+ * Fetch a user's vote for a specific post.
+ * @param {string} postId - The ID of the post.
+ * @returns {Promise<'up'|'down'|null>} - The vote direction or null.
+ */
+export const getUserVote = async (postId) => {
+  try {
+    if (!auth.currentUser || !postId) return null;
+    const voteId = `post_${postId}_user_${auth.currentUser.uid}`;
+    const voteSnap = await getDoc(doc(db, "userVotes", voteId));
+    return voteSnap.exists() ? voteSnap.data().direction : null;
+  } catch (error) {
+    console.error("Error fetching user vote:", error);
+    return null;
   }
 };
 
