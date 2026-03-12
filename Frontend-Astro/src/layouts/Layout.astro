@@ -4,7 +4,7 @@ import '../styles/global.css';
 import 'primereact/resources/themes/lara-dark-blue/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'quill/dist/quill.snow.css';
-import Header from '../components/shared/Header';
+import Header from '../components/shared/Header.astro';
 import Footer from '../components/shared/Footer.astro';
 ---
 
@@ -20,7 +20,7 @@ import Footer from '../components/shared/Footer.astro';
 		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 	</head>
 	<body class="selection:bg-primary selection:text-background-dark">
-		<Header client:load />
+		<Header />
 		<slot />
 		<Footer />
 	</body>

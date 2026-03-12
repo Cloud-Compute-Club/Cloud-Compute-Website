@@ -1,7 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Hero from '../components/landing/Hero.astro';
-import { HomeCTA } from '../components/landing/HomeCTA.jsx';
+import { getAllPosts } from '../api/api.js';
+import PostCard from '../components/posts/PostCard.astro';
+
+// SSR: Fetch latest post for the dashboard
+const posts = await getAllPosts(1);
+const latestPost = posts.length > 0 ? posts[0] : null;
 ---
 
 <Layout title="cloud computing club | Build & Scale">
@@ -54,9 +59,65 @@ import { HomeCTA } from '../components/landing/HomeCTA.jsx';
             </div>
         </section>
 
-        {/* CTA Section */}
+        {/* Home Dashboard / CTA */}
         <section class="py-24 px-6 md:px-12 min-h-[400px]">
-            <HomeCTA client:only="react" />
+            {/* Guest CTA */}
+            <div id="guest-cta" class="hidden max-w-5xl mx-auto glass-card p-12 text-center border-primary/10 relative overflow-hidden">
+                <div class="hidden md:block absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-[80px]"></div>
+                <h2 class="text-4xl font-bold mb-6">Ready to scale your skills?</h2>
+                <p class="text-text-secondary text-lg mb-10 max-w-xl mx-auto">Join hundreds of developers already building the next generation of cloud applications.</p>
+                <a href="/signup" class="btn-primary inline-block">Create Your Account</a>
+            </div>
+
+            {/* Member View */}
+            <div id="member-view" class="hidden max-w-3xl mx-auto glass-card p-8 text-left border-primary/20 relative overflow-hidden group">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold tracking-tight text-white mb-1">
+                            Welcome back, <span id="user-name-display" class="text-primary">Developer</span>!
+                        </h2>
+                        <p class="text-text-secondary text-sm">Here is the latest from the community blog.</p>
+                    </div>
+                    <a href="/posts" class="btn-outline text-xs">View All</a>
+                </div>
+                
+                {latestPost ? (
+                    <div class="border border-white/5 bg-background-dark/30 rounded-xl overflow-hidden shadow-2xl">
+                         <PostCard post={latestPost} />
+                    </div>
+                ) : (
+                    <div class="py-12 text-center bg-background-dark/20 rounded-xl border border-dashed border-white/10">
+                        <p class="text-text-secondary text-sm italic">No posts yet. Start the conversation!</p>
+                        <a href="/create" class="btn-primary mt-4 inline-block text-xs">Create Post</a>
+                    </div>
+                )}
+            </div>
         </section>
 	</main>
 </Layout>
+
+<script>
+    import { $currentUser, $authLoading } from '../stores/authStore.js';
+
+    const guestCta = document.getElementById('guest-cta');
+    const memberView = document.getElementById('member-view');
+    const userNameDisplay = document.getElementById('user-name-display');
+
+    const updateHomeUI = (user, isLoading) => {
+        if (isLoading) return;
+
+        if (user) {
+            guestCta?.classList.add('hidden');
+            memberView?.classList.remove('hidden');
+            if (userNameDisplay) {
+                userNameDisplay.textContent = user.displayName?.split(' ')[0] || 'Developer';
+            }
+        } else {
+            memberView?.classList.add('hidden');
+            guestCta?.classList.remove('hidden');
+        }
+    };
+
+    $currentUser.subscribe(user => updateHomeUI(user, $authLoading.get()));
+    $authLoading.subscribe(loading => updateHomeUI($currentUser.get(), loading));
+</script>

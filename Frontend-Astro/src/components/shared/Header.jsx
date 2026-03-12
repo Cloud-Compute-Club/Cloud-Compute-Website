@@ -3,6 +3,28 @@ import { useStore } from '@nanostores/react';
 import { $currentUser, logout, initAuth } from '../../stores/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
+function ProfileIcon({ user }) {
+    const [imgError, setImgError] = React.useState(false);
+
+    return (
+        <a href="/profile" className="flex items-center gap-2 group">
+            {user.photoURL && !imgError ? (
+                <img
+                    src={user.photoURL}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full border border-primary/20 group-hover:border-primary/50 transition-all object-cover"
+                    onError={() => setImgError(true)}
+                    referrerPolicy="no-referrer"
+                />
+            ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs border border-primary/20 group-hover:border-primary/50 transition-all">
+                    {user.displayName?.charAt(0) || 'U'}
+                </div>
+            )}
+        </a>
+    );
+}
+
 export default function Header() {
     const user = useStore($currentUser);
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -32,15 +54,7 @@ export default function Header() {
                 <div className="flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-4">
-                            <a href="/profile" className="flex items-center gap-2 group">
-                                {user.photoURL ? (
-                                    <img src={user.photoURL} alt="Profile" className="w-8 h-8 rounded-full border border-primary/20 group-hover:border-primary/50 transition-all object-cover" />
-                                ) : (
-                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs border border-primary/20 group-hover:border-primary/50 transition-all">
-                                        {user.displayName?.charAt(0) || 'U'}
-                                    </div>
-                                )}
-                            </a>
+                            <ProfileIcon user={user} />
                             <button
                                 onClick={logout}
                                 className="hidden md:block text-xs font-bold text-text-secondary hover:text-red-500 transition-colors"

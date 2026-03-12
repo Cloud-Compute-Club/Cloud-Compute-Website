@@ -1,0 +1,174 @@
+---
+// Header.astro - Purely Astro native header
+---
+
+<header class="fixed top-0 left-0 right-0 z-[100] py-4 px-4 md:px-12">
+    <nav 
+        class="max-w-7xl mx-auto glass-card flex items-center justify-between px-4 md:px-6 py-2.5 relative border border-white/5 shadow-2xl"
+        style="transform: translateZ(0);"
+    >
+        {/* Logo Section */}
+        <a href="/" class="flex items-center gap-2.5 group">
+            <img src="/logos/CCC_Logo.jpg" alt="Logo" class="h-8 md:h-9 rounded-full border border-white/10 group-hover:scale-105 transition-transform duration-200" />
+            <span class="hidden sm:block text-lg md:text-xl font-bold text-white tracking-tight group-hover:text-primary transition-colors duration-200">cloud computing club</span>
+        </a>
+
+        {/* Desktop Navigation Links */}
+        <div class="hidden md:flex items-center gap-6 lg:gap-8">
+            <a href="/links" class="nav-link">Resources</a>
+            <a href="/posts" class="nav-link">Blog</a>
+            <a href="/about" class="nav-link opacity-60 hover:opacity-100">About</a>
+        </div>
+
+        {/* Dynamic Auth Section */}
+        <div id="nav-auth" class="flex items-center gap-3 md:gap-4 min-w-[100px] justify-end">
+            {/* Loading Indicator */}
+            <div id="auth-loading" class="h-5 w-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+
+            {/* Guest View */}
+            <div id="auth-guest" class="hidden items-center gap-2 md:gap-4">
+                <a href="/login" class="nav-link text-sm font-bold opacity-70 hover:opacity-100 transition-opacity">Login</a>
+                <a href="/signup" class="btn-primary text-xs md:text-sm shadow-lg shadow-primary/20 py-2 px-4">Join Club</a>
+            </div>
+
+            {/* Authenticated View */}
+            <div id="auth-user" class="hidden items-center gap-3 md:gap-5">
+                <a href="/admin" id="admin-link" class="hidden text-[10px] font-black uppercase tracking-[0.2em] text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20 hover:bg-primary/20 transition-all">Console</a>
+                
+                <div class="flex items-center gap-2.5 group/profile">
+                    <a href="/profile" id="user-link" class="relative block overflow-hidden rounded-full border border-white/10 group-hover/profile:border-primary/50 transition-all shadow-lg active:scale-95">
+                        <img id="user-avatar" class="hidden w-8 h-8 rounded-full object-cover" src="" alt="Profile" />
+                        <div id="user-initial" class="hidden w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs ring-1 ring-primary/30">U</div>
+                    </a>
+                </div>
+                
+                <button id="logout-btn" class="hidden md:block text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-red-500 transition-all hover:scale-105 active:scale-95">Sign Out</button>
+            </div>
+
+            {/* Mobile Menu Toggle */}
+            <button id="mobile-toggle" class="md:hidden text-white/60 hover:text-white transition-colors p-1 active:scale-90" aria-label="Toggle Menu">
+                <svg id="menu-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                </svg>
+                <svg id="close-icon" xmlns="http://www.w3.org/2000/svg" class="hidden h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    {/* Mobile Navigation Dropdown */}
+    <div id="mobile-menu" class="hidden fixed inset-x-4 top-[84px] p-6 glass-card bg-background-dark/95 border-white/10 shadow-[0_40px_80px_-20px_rgba(0,0,0,1)] flex-col gap-5 z-[50] animate-in slide-in-from-top-4 fade-in duration-300">
+        <div class="space-y-1">
+            <a href="/links" class="mobile-nav-link block px-6 py-4 rounded-xl hover:bg-white/5 font-bold transition-all">Resources</a>
+            <a href="/posts" class="mobile-nav-link block px-6 py-4 rounded-xl hover:bg-white/5 font-bold transition-all">Blog</a>
+            <a href="/about" class="mobile-nav-link block px-6 py-4 rounded-xl hover:bg-white/5 font-bold transition-all">About Our Club</a>
+        </div>
+        
+        <div id="mobile-auth" class="pt-4 border-t border-white/5">
+            {/* Logic injected via script */}
+        </div>
+    </div>
+</header>
+
+<script>
+    import { $currentUser, logout, initAuth } from '../../stores/authStore.js';
+    
+    // Initialize Auth
+    initAuth();
+
+    const authLoading = document.getElementById('auth-loading');
+    const authGuest = document.getElementById('auth-guest');
+    const authUser = document.getElementById('auth-user');
+    const userAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+    const userInitial = document.getElementById('user-initial');
+    const adminLink = document.getElementById('admin-link');
+    const logoutBtn = document.getElementById('logout-btn');
+    const mobileToggle = document.getElementById('mobile-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const mobileAuth = document.getElementById('mobile-auth');
+    const menuIcon = document.getElementById('menu-icon');
+    const closeIcon = document.getElementById('close-icon');
+
+    const updateAuthUI = (user) => {
+        authLoading?.classList.add('hidden');
+        
+        if (user) {
+            authGuest?.classList.add('hidden');
+            authGuest?.classList.remove('flex');
+            authUser?.classList.remove('hidden');
+            authUser?.classList.add('flex');
+
+            if (user.photoURL) {
+                userAvatar.src = user.photoURL;
+                userAvatar.classList.remove('hidden');
+                userInitial?.classList.add('hidden');
+            } else {
+                userAvatar.classList.add('hidden');
+                userInitial?.classList.remove('hidden');
+                userInitial.textContent = user.displayName?.charAt(0) || 'U';
+            }
+
+            if (user.role === 'admin') {
+                adminLink?.classList.remove('hidden');
+            } else {
+                adminLink?.classList.add('hidden');
+            }
+
+            // Update mobile auth section
+            mobileAuth.innerHTML = `
+                <div class="flex flex-col gap-4">
+                    ${user.role === 'admin' ? '<a href="/admin" class="btn-outline py-3 text-center text-primary border-primary/20">Admin Panel</a>' : ''}
+                    <button id="mobile-logout" class="py-3 text-xs font-black uppercase tracking-widest text-red-500 bg-red-500/5 rounded-xl border border-red-500/10">Sign Out</button>
+                </div>
+            `;
+            document.getElementById('mobile-logout')?.addEventListener('click', () => {
+                logout();
+                toggleMobileMenu(false);
+            });
+
+        } else {
+            authUser?.classList.add('hidden');
+            authUser?.classList.remove('flex');
+            authGuest?.classList.remove('hidden');
+            authGuest?.classList.add('flex');
+
+            // Update mobile auth section
+            mobileAuth.innerHTML = `
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="/login" class="nav-link text-center px-4 py-3 font-bold">Login</a>
+                    <a href="/signup" class="btn-primary text-center px-4 py-3">Sign Up</a>
+                </div>
+            `;
+        }
+    };
+
+    $currentUser.subscribe(user => {
+        updateAuthUI(user);
+    });
+
+    logoutBtn?.addEventListener('click', () => logout());
+
+    // Mobile Menu Toggle
+    const toggleMobileMenu = (force = null) => {
+        const isOpen = force !== null ? force : mobileMenu?.classList.contains('hidden');
+        if (isOpen) {
+            mobileMenu?.classList.remove('hidden');
+            mobileMenu?.classList.add('flex');
+            menuIcon?.classList.add('hidden');
+            closeIcon?.classList.remove('hidden');
+        } else {
+            mobileMenu?.classList.add('hidden');
+            mobileMenu?.classList.remove('flex');
+            menuIcon?.classList.remove('hidden');
+            closeIcon?.classList.add('hidden');
+        }
+    };
+
+    mobileToggle?.addEventListener('click', () => toggleMobileMenu());
+
+    // Close mobile menu on nav link click
+    document.querySelectorAll('.mobile-nav-link').forEach(link => {
+        link.addEventListener('click', () => toggleMobileMenu(false));
+    });
+</script>

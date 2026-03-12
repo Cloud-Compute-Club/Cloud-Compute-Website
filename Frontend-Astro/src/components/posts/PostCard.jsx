@@ -9,6 +9,8 @@ export default function PostCard({ post }) {
         ? new Date(createdAt.seconds * 1000).toLocaleDateString()
         : 'Recently';
 
+    const [imgError, setImgError] = React.useState(false);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -18,11 +20,17 @@ export default function PostCard({ post }) {
         >
             <a href={`/post/${id}`} className="p-6 flex flex-col h-full">
                 <div className="flex items-center gap-3 mb-4">
-                    {authorPhotoURL ? (
-                        <img src={authorPhotoURL} alt="" className="w-8 h-8 rounded-full border border-white/10" />
+                    {authorPhotoURL && !imgError ? (
+                        <img
+                            src={authorPhotoURL}
+                            alt=""
+                            className="w-8 h-8 rounded-full border border-white/10 object-cover"
+                            onError={() => setImgError(true)}
+                            referrerPolicy="no-referrer"
+                        />
                     ) : (
                         <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                            {authorName?.charAt(0)}
+                            {authorName?.charAt(0) || 'U'}
                         </div>
                     )}
                     <div className="flex flex-col">

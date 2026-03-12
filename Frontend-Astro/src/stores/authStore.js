@@ -13,7 +13,7 @@ import {
     EmailAuthProvider
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
-import { auth, db, uploadFile } from '../api/api';
+import { auth, db, uploadFile } from '../api/api.js';
 
 export const $currentUser = atom(null);
 export const $authLoading = atom(true);
@@ -23,7 +23,7 @@ let unsubscribeAuth = null;
 export const initAuth = () => {
     if (unsubscribeAuth) return; // Prevent multiple listeners
 
-    const authInstance = getAuth();
+    const authInstance = auth;
     unsubscribeAuth = onAuthStateChanged(authInstance, async (user) => {
         if (user) {
             try {
@@ -225,8 +225,8 @@ export const login = async (email, password) => {
 
 export const loginWithGoogle = async () => {
     try {
-        const { signInWithGoogle: apiSignInWithGoogle } = await import('../api/api');
-        await apiSignInWithGoogle();
+        const { loginWithGoogle: apiLoginWithGoogle } = await import('../api/api.js');
+        await apiLoginWithGoogle();
         return { success: true };
     } catch (error) {
         console.error('Google login error:', error);

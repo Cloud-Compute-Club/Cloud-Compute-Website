@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
-import { getUserProfile, updateUserProfile, getUserActivity, logout } from '../../api/api';
+import { getUserProfile, updateUserProfile, getUserActivity, logout } from '../../api/api.js';
 
 export default function ProfilePage() {
     const { currentUser } = useAuth();
@@ -35,9 +35,12 @@ export default function ProfilePage() {
 
     const isOwnProfile = currentUser && targetUid === currentUser.uid;
 
+    const [imgError, setImgError] = useState(false);
+
     async function fetchFullProfile(uid) {
         try {
             setLoading(true);
+            setImgError(false);
             const data = await getUserProfile(uid);
             setProfile(data);
             setBioText(data.bio || '');
@@ -132,8 +135,14 @@ export default function ProfilePage() {
                 <div className="h-48 bg-gradient-to-br from-primary/30 via-background-dark/50 to-background-dark relative border-b border-white/5">
                     <div className="absolute -bottom-12 md:-bottom-16 left-4 md:left-10 flex items-end gap-4 md:gap-6 pr-4">
                         <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-surface-dark border-4 border-background-dark flex-shrink-0 flex items-center justify-center text-3xl md:text-4xl font-black text-primary shadow-2xl overflow-hidden glass-card">
-                            {profile.photoURL ? (
-                                <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                            {profile.photoURL && !imgError ? (
+                                <img
+                                    src={profile.photoURL}
+                                    alt="Profile"
+                                    className="w-full h-full object-cover"
+                                    onError={() => setImgError(true)}
+                                    referrerPolicy="no-referrer"
+                                />
                             ) : (
                                 profile.displayName?.charAt(0) || 'U'
                             )}

@@ -1,16 +1,208 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import PostDetail from '../../components/posts/PostDetail';
-
-export function getStaticPaths() {
-  return [
-    { params: { id: 'preview' } },
-  ];
-}
+import { getPost, getPostsByUser } from '../../api/api.js';
+import PostVoting from '../../components/posts/PostVoting.jsx';
+import CommentSection from '../../components/posts/CommentSection.jsx';
+import AdminPostActions from '../../components/posts/AdminPostActions.jsx';
+import MarkdownContent from '../../components/posts/MarkdownContent.jsx';
 
 const { id } = Astro.params;
+const post = await getPost(id);
+
+if (!post) {
+    return Astro.redirect('/404');
+}
+
+const authorPostsRaw = await getPostsByUser(post.authorId, 6);
+const authorPosts = authorPostsRaw.filter(p => p.id !== id).slice(0, 5);
+
+const dateStr = post.createdAt?.seconds 
+    ? new Date(post.createdAt.seconds * 1000).toLocaleDateString()
+    : 'Recent Insight';
 ---
 
-<Layout title={`Architecture Insight - cloud computing club`}>
-    <PostDetail client:load postId={id} />
+<Layout title={`${post.title} | Cloud Community Club`}>
+    <main class="min-h-screen pt-40 pb-24 px-4 md:px-6">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+            {/* Main Content Area */}
+            <article class="flex-1 min-w-0">
+                <div class="glass-card overflow-hidden border-white/5 shadow-2xl flex">
+                    {/* Desktop Side Voting Rail (Island) */}
+                    <div class="hidden md:flex">
+                        <PostVoting client:load postId={id} initialVotes={post.votes || 0} />
+                    </div>
+
+                    <div class="flex-1 p-6 md:p-10">
+                        <header class="mb-8">
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <span class="text-text-secondary text-xs">{dateStr}</span>
+                                    {post.pinned && (
+                                        <span class="ml-2 px-2 py-0.5 rounded-md bg-white/5 text-primary text-[9px] font-black uppercase tracking-widest border border-primary/20 shadow-lg shadow-primary/10">Pinned</span>
+                                    )}
+                                </div>
+                            </div>
+                            <h1 class="text-3xl md:text-5xl font-black tracking-tight mb-6 leading-tight text-white">{post.title}</h1>
+                        </header>
+
+                        {/* Imagery Section (Static) */}
+                        {post.images && post.images.length > 0 && (
+                            <div class="space-y-6 mb-10">
+                                {post.images.map((img, idx) => (
+                                    <figure class="rounded-2xl overflow-hidden border border-white/5 bg-background-dark/50">
+                                        <img
+                                            src={img.url}
+                                            class="w-full h-auto max-h-[700px] object-contain mx-auto"
+                                            alt={img.caption || `Diagram ${idx + 1}`}
+                                        />
+                                        {img.caption && (
+                                            <figcaption class="p-4 bg-white/5 text-xs text-text-secondary border-t border-white/5 font-medium italic text-center">
+                                                {img.caption}
+                                            </figcaption>
+                                        )}
+                                    </figure>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Post Content (Small Island for rendering, but content is passed) */}
+                        <MarkdownContent client:load content={post.content} />
+
+                        {/* Resource Downloads Section (Static) */}
+                        {post.files && post.files.length > 0 && (
+                            <div class="mb-12 space-y-4 px-1">
+                                <div class="flex items-center gap-2 mb-6">
+                                    <div class="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)]"></div>
+                                    <h3 class="text-xs font-black uppercase tracking-[0.2em] text-white">Resource Infrastructure</h3>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {post.files.map((file, idx) => (
+                                        <a
+                                            href={file.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            download={file.name}
+                                            class="flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/30 hover:bg-white/10 transition-all group relative overflow-hidden"
+                                        >
+                                            <div class="hidden md:block absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-primary/10 transition-colors"></div>
+
+                                            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform relative z-10 shadow-lg">
+                                                {file.name.endsWith('.zip') ? (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <div class="flex-1 min-w-0 relative z-10">
+                                                <p class="text-sm font-bold text-white truncate group-hover:text-primary transition-colors">{file.name}</p>
+                                                <div class="flex items-center gap-2 mt-1.5">
+                                                    <span class="text-[10px] text-text-secondary uppercase tracking-widest font-black opacity-60">
+                                                        {file.size ? (file.size / 1024 < 1024 ? `${(file.size / 1024).toFixed(1)} KB` : `${(file.size / (1024 * 1024)).toFixed(1)} MB`) : 'Resource'}
+                                                    </span>
+                                                    <span class="text-[10px] text-white/10">•</span>
+                                                    <span class="text-[10px] text-primary font-black uppercase tracking-widest">Deploy Link</span>
+                                                </div>
+                                            </div>
+                                            <div class="p-2 text-white/20 group-hover:text-primary transition-all relative z-10 transform group-hover:translate-y-0.5">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                </svg>
+                                            </div>
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Action Bar (Static layout + Islands) */}
+                        <div class="flex flex-wrap items-center gap-6 pt-6 border-t border-white/5 border-dashed">
+                             <div class="md:hidden">
+                                <PostVoting client:load postId={id} initialVotes={post.votes || 0} />
+                             </div>
+                            
+                            <div class="flex items-center gap-2 text-text-secondary hover:text-white cursor-pointer transition-colors text-sm font-bold">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                {post.commentCount || 0} Comments
+                            </div>
+                            
+                            <button
+                                onclick={`if (navigator.share) { navigator.share({ title: "${post.title}", url: window.location.href }); } else { navigator.clipboard.writeText(window.location.href); alert('Link copied!'); }`}
+                                class="flex items-center gap-2 text-text-secondary hover:text-white cursor-pointer transition-colors text-sm font-bold"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                </svg>
+                                Share
+                            </button>
+
+                            <AdminPostActions client:load postId={id} authorId={post.authorId} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Discussions Section (Island) */}
+                <CommentSection client:visible postId={id} />
+            </article>
+
+            {/* Sidebar (Static) */}
+            <aside class="hidden lg:block w-80 space-y-6">
+                <div class="glass-card p-6 border-white/5">
+                    <h4 class="text-xs font-black uppercase tracking-[0.2em] text-primary mb-4">About the Author</h4>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-white/5 flex items-center justify-center">
+                            {post.authorPhotoURL ? (
+                                <img
+                                    src={post.authorPhotoURL}
+                                    alt=""
+                                    class="w-full h-full object-cover absolute inset-0"
+                                    referrerpolicy="no-referrer"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                />
+                                <div class="hidden w-full h-full bg-white/5 items-center justify-center text-white/20 font-black text-xl">
+                                    {post.authorName?.charAt(0) || 'U'}
+                                </div>
+                            ) : (
+                                <div class="w-full h-full bg-white/5 flex items-center justify-center text-white/20 font-black text-xl">
+                                    {post.authorName?.charAt(0) || 'U'}
+                                </div>
+                            )}
+                        </div>
+                        <div>
+                            <p class="text-white font-black leading-tight">{post.authorName || 'Anonymous'}</p>
+                        </div>
+                    </div>
+                    <a
+                        href={`/profile?id=${post.authorId}`}
+                        class="block w-full text-center bg-white/5 border border-white/10 text-white py-3 rounded-xl text-xs font-bold hover:bg-white/10 transition-all uppercase tracking-widest"
+                    >
+                        View Profile
+                    </a>
+                </div>
+
+                {authorPosts.length > 0 && (
+                    <div class="glass-card p-6 border-white/5">
+                        <h4 class="text-xs font-black uppercase tracking-[0.2em] text-primary mb-4">Previous Posts</h4>
+                        <div class="space-y-4">
+                            {authorPosts.map(prevPost => (
+                                <a href={`/post/${prevPost.id}`} class="block group/item">
+                                    <p class="text-sm font-bold text-white group-hover/item:text-primary transition-colors line-clamp-2 leading-tight mb-1">
+                                        {prevPost.title}
+                                    </p>
+                                    <p class="text-[10px] text-text-secondary uppercase tracking-widest font-black">
+                                        {prevPost.createdAt?.seconds ? new Date(prevPost.createdAt.seconds * 1000).toLocaleDateString() : 'Recent'}
+                                    </p>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </aside>
+        </div>
+    </main>
 </Layout>

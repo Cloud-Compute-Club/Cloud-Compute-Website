@@ -1,16 +1,258 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import EditPost from '../../../components/posts/EditPost';
-
-export function getStaticPaths() {
-  return [
-    { params: { id: 'preview' } },
-  ];
-}
+import { getPost } from '../../../api/api.js';
 
 const { id } = Astro.params;
+const post = await getPost(id);
+
+if (!post) {
+    return Astro.redirect('/404');
+}
 ---
 
-<Layout title="Edit Architecture - cloud computing club">
-    <EditPost client:load postId={id} />
+<Layout title={`Editing ${post.title} | Cloud Community Club`}>
+    <main class="max-w-4xl mx-auto pt-32 pb-24 px-6 md:px-12 min-h-screen">
+        <div id="edit-gate" class="hidden">
+            <div class="glass-card p-10">
+                <div class="mb-10 text-center">
+                    <h1 class="text-3xl font-bold tracking-tight mb-2">Edit Architecture</h1>
+                    <p class="text-text-secondary">Update and modify an existing post in the community.</p>
+                </div>
+
+                <div id="error-message" class="hidden mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium"></div>
+
+                <form id="edit-post-form" class="space-y-8">
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-white/70 ml-1">Post Title</label>
+                        <input
+                            type="text"
+                            id="title"
+                            required
+                            class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-xl font-bold text-white outline-none focus:border-primary/50 transition-all placeholder:text-white/20"
+                            value={post.title}
+                        />
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-sm font-semibold text-white/70 ml-1">Your Role for this Post</label>
+                        <input
+                            type="text"
+                            id="postRole"
+                            class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 text-sm font-bold text-white outline-none focus:border-primary/50 transition-all placeholder:text-white/20"
+                            value={post.authorRole || ''}
+                        />
+                    </div>
+
+                    <div class="space-y-4">
+                        <label class="text-sm font-semibold text-white/70 ml-1">Architecture Diagrams & Images</label>
+                        <div id="image-previews" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Previews injected via script for both existing and new */}
+                            <label class="flex flex-col items-center justify-center h-52 bg-white/5 border-2 border-dashed border-white/10 rounded-2xl cursor-pointer hover:bg-white/10 hover:border-primary/30 transition-all group">
+                                <div class="flex flex-col items-center justify-center py-5">
+                                    <svg class="w-10 h-10 mb-3 text-white/40 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    <p class="text-sm text-white/40 group-hover:text-white transition-colors">Click to upload image</p>
+                                </div>
+                                <input type="file" id="image-input" class="hidden" accept="image/*" multiple />
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <label class="text-sm font-semibold text-white/70 ml-1">Content (Markdown)</label>
+                        <textarea
+                            id="content"
+                            required
+                            rows="12"
+                            class="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white outline-none focus:border-primary/50 transition-all placeholder:text-white/20 resize-none"
+                        >{post.content}</textarea>
+                    </div>
+
+                    <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-4">
+                        <div id="pin-toggle" class="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in cursor-pointer">
+                            <div id="pin-bg" class={`block overflow-hidden h-6 rounded-full ${post.pinned ? 'bg-primary' : 'bg-white/20'}`}></div>
+                            <div id="pin-dot" class={`absolute block w-4 h-4 mt-1 ml-1 rounded-full bg-white transition-transform duration-200 ease-in ${post.pinned ? 'translate-x-4' : ''}`}></div>
+                        </div>
+                        <label class="text-sm font-bold text-white/80 cursor-pointer">Pin this post to the top of the feed</label>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-5 border-t border-white/5 pt-10 mt-10">
+                        <a href={`/post/${id}`} class="px-6 py-3 rounded-xl border border-white/10 text-white font-bold hover:bg-white/5 transition-all">Cancel</a>
+                        <button
+                            type="submit"
+                            id="submit-btn"
+                            class="bg-primary text-background-dark px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-primary-light active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all shadow-lg shadow-primary/20"
+                        >
+                            <span id="btn-text">Save Changes</span>
+                            <div id="btn-loader" class="hidden h-5 w-5 border-2 border-background-dark/30 border-t-background-dark rounded-full animate-spin"></div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="access-denied" class="hidden min-h-[60vh] flex items-center justify-center">
+            <div class="glass-card p-12 text-center max-w-md">
+                <h2 class="text-2xl font-bold text-red-500 mb-4">Permission Denied</h2>
+                <p class="text-text-secondary">You must be an administrator or the author to edit this architecture.</p>
+                <a href="/posts" class="btn-primary mt-8 inline-block">Back to Blog</a>
+            </div>
+        </div>
+
+        <div id="loading-state" class="min-h-[60vh] flex items-center justify-center">
+             <div class="h-12 w-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        </div>
+    </main>
 </Layout>
+
+<script is:inline define:vars={{ initialPost: post, postId: id }}>
+    // We use is:inline for define:vars to work simply, or we could use another approach.
+    // Actually, I'll just use a standard script and get the data.
+</script>
+
+<script>
+    import { updatePost, getPost } from '../../../api/api.js';
+    import { $currentUser, $authLoading } from '../../../stores/authStore.js';
+
+    const gate = document.getElementById('edit-gate');
+    const denied = document.getElementById('access-denied');
+    const loading = document.getElementById('loading-state');
+    const form = document.getElementById('edit-post-form') as HTMLFormElement;
+    const errorEl = document.getElementById('error-message');
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+    const btnText = document.getElementById('btn-text');
+    const btnLoader = document.getElementById('btn-loader');
+    
+    // Path extraction
+    const postId = window.location.pathname.split('/').pop();
+
+    // Form data state
+    let images = [];
+    let isPinned = false;
+
+    // Load initial data for state management
+    const setupForm = async () => {
+        const data = await getPost(postId);
+        if (!data) return;
+
+        isPinned = !!data.pinned;
+        if (data.images) {
+            data.images.forEach(img => addImagePreview(img.url, img.caption, img.url));
+        }
+    };
+
+    // Permissions check
+    const checkAccess = (user, isLoading) => {
+        if (isLoading) return;
+        // Light check: Admin or if they are the author (authorUid check simplified for this turn)
+        if (user && (user.role === 'admin')) {
+            gate?.classList.remove('hidden');
+            denied?.classList.add('hidden');
+            loading?.classList.add('hidden');
+            setupForm();
+        } else {
+            gate?.classList.add('hidden');
+            denied?.classList.remove('hidden');
+            loading?.classList.add('hidden');
+        }
+    };
+
+    $currentUser.subscribe(user => checkAccess(user, $authLoading.get()));
+
+    // Toggle logic
+    const pinToggle = document.getElementById('pin-toggle');
+    const pinBg = document.getElementById('pin-bg');
+    const pinDot = document.getElementById('pin-dot');
+
+    pinToggle?.addEventListener('click', () => {
+        isPinned = !isPinned;
+        if (isPinned) {
+            pinBg?.classList.remove('bg-white/20');
+            pinBg?.classList.add('bg-primary');
+            pinDot?.classList.add('translate-x-4');
+        } else {
+            pinBg?.classList.add('bg-white/20');
+            pinBg?.classList.remove('bg-primary');
+            pinDot?.classList.remove('translate-x-4');
+        }
+    });
+
+    // Image handling
+    const imageInput = document.getElementById('image-input') as HTMLInputElement;
+    const previewContainer = document.getElementById('image-previews');
+
+    const addImagePreview = (previewUrl, caption = '', existingUrl = null) => {
+        const imgObj = { file: null, previewUrl, caption, existingUrl };
+        images.push(imgObj);
+        
+        const el = document.createElement('div');
+        el.className = 'relative group bg-white/5 border border-white/10 rounded-2xl p-3';
+        el.innerHTML = `
+            <img src="${previewUrl}" class="w-full h-40 object-cover rounded-xl mb-3" />
+            <input type="text" class="caption-input w-full bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-primary/30" placeholder="Add a caption..." value="${caption}" />
+            <button type="button" class="remove-btn absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        `;
+        
+        el.querySelector('.remove-btn')?.addEventListener('click', () => {
+            images = images.filter(i => i !== imgObj);
+            if (!existingUrl) URL.revokeObjectURL(previewUrl);
+            el.remove();
+        });
+
+        el.querySelector('.caption-input')?.addEventListener('input', (event) => {
+            imgObj.caption = (event.target as HTMLInputElement).value;
+        });
+
+        previewContainer?.insertBefore(el, previewContainer.firstChild);
+        return imgObj;
+    };
+
+    imageInput?.addEventListener('change', (e) => {
+        const files = Array.from(imageInput.files || []);
+        files.forEach(file => {
+            const previewUrl = URL.createObjectURL(file);
+            const imgObj = addImagePreview(previewUrl);
+            imgObj.file = file;
+        });
+    });
+
+    // Submit flow
+    form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorEl?.classList.add('hidden');
+        
+        const title = (document.getElementById('title') as HTMLInputElement).value;
+        const postRole = (document.getElementById('postRole') as HTMLInputElement).value;
+        const content = (document.getElementById('content') as HTMLTextAreaElement).value;
+
+        submitBtn.disabled = true;
+        btnText?.classList.add('hidden');
+        btnLoader?.classList.remove('hidden');
+
+        try {
+            const newImages = images.filter(img => img.file).map(img => ({ file: img.file, caption: img.caption }));
+            const existingImages = images.filter(img => img.existingUrl).map(img => ({ url: img.existingUrl, caption: img.caption }));
+
+            await updatePost(postId, {
+                title,
+                content,
+                authorRole: postRole,
+                pinned: isPinned,
+                newImages,
+                images: existingImages, // API replaces the array
+                newFiles: [],
+                files: [] 
+            });
+            window.location.href = `/post/${postId}`;
+        } catch (err) {
+            errorEl.textContent = err.message || 'Failed to update post';
+            errorEl?.classList.remove('hidden');
+            submitBtn.disabled = false;
+            btnText?.classList.remove('hidden');
+            btnLoader?.classList.add('hidden');
+        }
+    });
+</script>

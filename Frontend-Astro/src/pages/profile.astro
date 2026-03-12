@@ -1,8 +1,17 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import ProfilePage from '../components/Pages/ProfilePage';
+import ProfilePage from '../components/Pages/ProfilePage.jsx';
+import ProfileHybrid from '../components/profile/ProfileHybrid.astro';
+
+const id = Astro.url.searchParams.get('id');
 ---
 
-<Layout title="Your Profile - cloud computing club">
-    <ProfilePage client:load />
+<Layout title="Member Profile | Cloud Community Club">
+    {id ? (
+        <ProfileHybrid targetUid={id} />
+    ) : (
+        <div class="pt-32 pb-24 px-6 md:px-12 min-h-screen">
+             <ProfilePage client:load />
+        </div>
+    )}
 </Layout>

@@ -14,7 +14,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
-import { auth, db, storage, uploadFile } from '../api/api';
+import { auth, db, storage, uploadFile } from '../api/api.js';
 
 export const AuthContext = createContext();
 

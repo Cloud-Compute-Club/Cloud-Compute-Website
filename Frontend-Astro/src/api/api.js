@@ -34,9 +34,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 // Firebase configuration from environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.PUBLIC_FIREBASE_API_KEY,
-  authDomain: (typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1'))
-    ? window.location.hostname
-    : import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
+  authDomain: import.meta.env.PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.PUBLIC_FIREBASE_PROJECT_ID,
   storageBucket: import.meta.env.PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
@@ -183,13 +181,12 @@ const getDocWithRetry = async (docRef, retries = 2, delay = 500) => {
   }
 };
 
-export const signInWithGoogle = async () => {
+export const loginWithGoogle = async () => {
   try {
-    console.log('[Auth] Starting Google Sign-In...');
+    console.log('[Auth] Starting Google login...');
     const result = await signInWithPopup(auth, googleProvider);
     console.log('[Auth] Popup successful, user:', result.user.email);
 
-    // Give Firestore a moment to recognize the new auth state if needed
     try {
       const userRef = doc(db, 'users', result.user.uid);
       console.log('[Auth] Checking user document in Firestore:', userRef.path);
@@ -200,8 +197,9 @@ export const signInWithGoogle = async () => {
       if (!userDoc.exists()) {
         console.log('[Auth] Creating new Firestore user document...');
         await setDoc(userRef, {
+          uid: result.user.uid,
           email: result.user.email,
-          displayName: result.user.displayName,
+          displayName: result.user.displayName || result.user.email?.split('@')[0] || 'Member',
           photoURL: result.user.photoURL,
           provider: 'google.com',
           role: 'user',
@@ -212,12 +210,11 @@ export const signInWithGoogle = async () => {
         });
         console.log('[Auth] New user document created.');
       }
-      return { success: true };
+      return { success: true, user: result.user };
     } catch (firestoreError) {
-      console.error('[Auth] Firestore sync failed:', firestoreError);
-      // We don't necessarily want to sign out if the auth succeeded but only firestore failed
-      // but to keep it consistent with the "user document must exist" rule:
-      await signOut(auth);
+      console.warn('[Auth] Firestore profile sync failed (user exists in Auth but not Firestore):', firestoreError);
+      // Don't sign out automatically; lets the user try again or view public content
+      // Throwing the error keeps it consistent but allows the caller to decide
       throw handleFirestoreError(firestoreError);
     }
   } catch (error) {
@@ -427,6 +424,32 @@ export const getPosts = (callback, onError) => {
     return unsubscribe;
   } catch (error) {
     console.error("Error setting up posts listener:", error);
+    throw handleFirestoreError(error);
+  }
+};
+
+/**
+ * Fetch all posts once.
+ * @param {number} limitCount - Maximum number of posts to fetch.
+ * @returns {Promise<Array>} - Array of posts.
+ */
+export const getAllPosts = async (limitCount = 30) => {
+  try {
+    const postsRef = collection(db, "posts");
+    const q = query(
+      postsRef,
+      orderBy("createdAt", "desc"),
+      limit(limitCount)
+    );
+
+    const snapshot = await getDocs(q);
+    const posts = [];
+    snapshot.forEach((doc) => {
+      posts.push({ id: doc.id, ...doc.data() });
+    });
+    return posts;
+  } catch (error) {
+    console.error("Error fetching all posts:", error);
     throw handleFirestoreError(error);
   }
 };

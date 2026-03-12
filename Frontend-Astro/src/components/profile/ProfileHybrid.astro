@@ -1,0 +1,79 @@
+---
+import { getUserProfile, getUserActivity, logout } from '../../api/api.js';
+import BioTagEditor from './BioTagEditor.jsx';
+import ProfileTabs from './ProfileTabs.jsx';
+
+const { targetUid } = Astro.props;
+const profile = await getUserProfile(targetUid);
+const activity = await getUserActivity(targetUid);
+
+if (!profile) return null;
+
+const dateStr = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'Recent Architect';
+---
+
+<div class="max-w-5xl mx-auto pt-40 pb-24 px-6 md:px-12">
+    <div class="glass-card overflow-hidden">
+        {/* Banner Header (Static) */}
+        <div class="h-48 bg-gradient-to-br from-primary/30 via-background-dark/50 to-background-dark relative border-b border-white/5">
+            <div class="absolute -bottom-12 md:-bottom-16 left-4 md:left-10 flex items-end gap-4 md:gap-6 pr-4">
+                <div class="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-surface-dark border-4 border-background-dark flex-shrink-0 flex items-center justify-center text-3xl md:text-4xl font-black text-primary shadow-2xl overflow-hidden glass-card">
+                    {profile.photoURL ? (
+                        <img
+                            src={profile.photoURL}
+                            alt="Profile"
+                            class="w-full h-full object-cover"
+                            referrerpolicy="no-referrer"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                        />
+                        <div class="hidden w-full h-full bg-surface-dark items-center justify-center text-primary font-black">
+                            {profile.displayName?.charAt(0) || 'U'}
+                        </div>
+                    ) : (
+                        profile.displayName?.charAt(0) || 'U'
+                    )}
+                </div>
+                <div class="pb-1 md:pb-4 min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
+                        <h1 class="text-xl md:text-3xl font-black text-white leading-tight break-words">{profile.displayName || 'Cloud Architect'}</h1>
+                        {profile.role === 'admin' && (
+                            <span class="px-2 md:px-3 py-1 bg-primary text-background-dark rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 flex-shrink-0">
+                                Admin
+                            </span>
+                        )}
+                    </div>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-4 mt-1 md:mt-0">
+                        <p class="text-text-secondary font-mono text-[10px] md:text-sm opacity-60">ID://{profile.userKey}</p>
+                        <span class="text-white/10 text-xs text-text-secondary hidden sm:inline">•</span>
+                        <span class="text-white/10 text-[9px] md:text-xs text-text-secondary opacity-80">Joined {dateStr}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-24 pb-12 px-10">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                {/* Sidebar (BioTagEditor is an island if needed, but we can pass static data) */}
+                <div class="space-y-8">
+                    <BioTagEditor client:load profile={profile} currentUserUid={null} />
+
+                    <div class="p-6 rounded-2xl bg-white/5 border border-white/5 space-y-4">
+                        <h4 class="text-[10px] font-black uppercase tracking-widest text-white/40">Infrastructure Information</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-text-secondary">Role</span>
+                                <span class="text-white font-medium capitalize">{profile.role}</span>
+                            </div>
+                        </div>
+                        <a href="/profile" class="block w-full mt-4 py-3 rounded-xl border border-primary/20 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest text-center hover:bg-primary/10 transition-all">
+                            Visit My Own Profile
+                        </a>
+                    </div>
+                </div>
+
+                {/* Main Content (ProfileTabs for interactions) */}
+                <ProfileTabs client:load initialActivity={activity} isAdminProfile={profile.role === 'admin'} />
+            </div>
+        </div>
+    </div>
+</div>

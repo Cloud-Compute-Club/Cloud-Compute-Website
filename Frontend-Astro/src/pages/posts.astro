@@ -1,6 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import PostsList from '../components/posts/PostsList';
+import PostCard from '../components/posts/PostCard.astro';
+import { getAllPosts } from '../api/api.js';
+
+const posts = await getAllPosts(50);
 ---
 
 <Layout title="Cloud Blog - Insights & Updates">
@@ -30,7 +33,25 @@ import PostsList from '../components/posts/PostsList';
                 </div>
             </header>
 
-            <PostsList client:load />
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {posts.map((post) => (
+                    <div class="h-full">
+                        <PostCard post={post} />
+                    </div>
+                ))}
+
+                {posts.length === 0 && (
+                     <div class="col-span-full py-24 text-center glass-card border-dashed">
+                        <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">No Posts Yet</h3>
+                        <p class="text-text-secondary max-w-sm mx-auto">Be the first to share an architecture Post with the club.</p>
+                    </div>
+                )}
+            </div>
         </div>
     </main>
 </Layout>

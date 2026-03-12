@@ -14,6 +14,8 @@ function Comment({ comment, onReply, postId, depth = 0 }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editText, setEditText] = useState(comment.content);
 
+    const [imgError, setImgError] = useState(false);
+
     // An admin OR the original author can edit/delete
     const isAuthorOrAdmin = currentUser && (currentUser.uid === comment.authorId || currentUser.role === 'admin');
 
@@ -59,11 +61,17 @@ function Comment({ comment, onReply, postId, depth = 0 }) {
     return (
         <div className={`mt-6 ${depth > 0 ? 'ml-6 border-l-2 border-white/5 pl-6' : ''}`}>
             <div className="flex gap-4">
-                {comment.authorPhotoURL ? (
-                    <img src={comment.authorPhotoURL} className="w-10 h-10 rounded-full border border-white/10" alt="" />
+                {comment.authorPhotoURL && !imgError ? (
+                    <img
+                        src={comment.authorPhotoURL}
+                        className="w-10 h-10 rounded-full border border-white/10 object-cover"
+                        alt=""
+                        onError={() => setImgError(true)}
+                        referrerPolicy="no-referrer"
+                    />
                 ) : (
                     <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 text-sm font-bold">
-                        {comment.authorName?.charAt(0)}
+                        {comment.authorName?.charAt(0) || 'U'}
                     </div>
                 )}
                 <div className="flex-1">
@@ -176,6 +184,7 @@ export default function PostDetail({ postId }) {
     const [isVoting, setIsVoting] = useState(false);
     const [userVote, setUserVote] = useState(null);
     const [authorPosts, setAuthorPosts] = useState([]);
+    const [sidebarImgError, setSidebarImgError] = useState(false);
 
     const isPostAuthorOrAdmin = currentUser && post && (currentUser.uid === post.authorId || currentUser.role === 'admin');
 
@@ -573,11 +582,17 @@ export default function PostDetail({ postId }) {
                     <div className="glass-card p-6 border-white/5">
                         <h4 className="text-xs font-black uppercase tracking-[0.2em] text-primary mb-4">About the Author</h4>
                         <div className="flex items-center gap-4 mb-4">
-                            {post.authorPhotoURL ? (
-                                <img src={post.authorPhotoURL} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                            {post.authorPhotoURL && !sidebarImgError ? (
+                                <img
+                                    src={post.authorPhotoURL}
+                                    alt=""
+                                    className="w-12 h-12 rounded-xl object-cover"
+                                    onError={() => setSidebarImgError(true)}
+                                    referrerPolicy="no-referrer"
+                                />
                             ) : (
                                 <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-white/20 font-black text-xl">
-                                    {post.authorName?.charAt(0)}
+                                    {post.authorName?.charAt(0) || 'U'}
                                 </div>
                             )}
                             <div>
